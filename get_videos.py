@@ -36,7 +36,7 @@ def create_parser(usage):
             help='Retrieve the top N videos')
     return parser
 
-class Entry:
+class RedditEntry:
     """Serializable reddit.Submission."""
     def __init__(self, submission):
         for a in dir(submission):
@@ -63,7 +63,7 @@ def main():
     to_dump = []
     while True:
         try:
-            to_dump.append(Entry(entries.next()))
+            to_dump.append(RedditEntry(entries.next()))
         except StopIteration:
             break
 

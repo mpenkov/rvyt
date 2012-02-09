@@ -103,6 +103,9 @@ def save_playlist(user,passwd,entries,title=DEFAULT_TITLE,callback=None):
         # Respect the API call limits.
         #
         time.sleep(1)
+    #
+    # TODO: output a list of skipped entries.
+    #
 
 def main():
     parser = create_parser('usage: %s user passwd videos.pickle [options]' % __file__)

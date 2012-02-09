@@ -1,0 +1,10 @@
+gitignore/
+*.o
+*.out
+*.pyc
+*.swp
+*.ibak
+*.plk
+*~
+tags
+.~lock.*

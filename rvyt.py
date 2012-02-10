@@ -2,187 +2,236 @@ from Tkinter import *
 import ImageTk
 import tkMessageBox
 import PIL.Image
+from ProgressMeter import Meter
 
 import reddit
-import pickle
 import urllib2
+import gdata.youtube
+import gdata.youtube.service
 import gdata.service
 import threading
+import Queue
+import time
+import ConfigParser
+import urlparse
 
-from ProgressMeter import Meter
-from get_videos import RedditEntry, USER_AGENT
-from save_playlist import save_playlist, DEFAULT_TITLE
+USER_AGENT = 'https://github.com/mpenkov/rvyt'
+
+#
+# TODO: get a new key for this application.
+#
+YOUTUBE_DEVELOPER_KEY = 'AI39si7lnm9bcrVuwNa2p58l0KhqPvPgTKMm6K-Bi1ZzVaDNvqbiEvrZJZfFfpMvMhJfOyaDtIpqTcHu6Xrj5121B8aRXNI76A'
+
+def youtube_login(user,passwd):
+    yt_service = gdata.youtube.service.YouTubeService()
+    yt_service.developer_key = YOUTUBE_DEVELOPER_KEY
+    yt_service.email = user
+    yt_service.password = passwd
+    yt_service.source = USER_AGENT
+    yt_service.ProgrammaticLogin()
+    return yt_service
+
+def get_video_id_from_url(url):
+    """
+    If the specified URL is a YouTube video, returns the video ID.
+    Otherwise, returns None.
+    """
+    p = urlparse.urlparse(url)
+    compo = p.path.split('/')
+    if p.netloc in [ 'www.youtu.be', 'youtu.be' ]:
+        return compo[1]
+    elif p.netloc in [ 'www.youtube.com', 'youtube.com' ]:
+        args = p.query.split(';')
+        video_id = None
+        for key,val in map(lambda f: f.split('='), args):
+            if key == 'v':
+                return val[:11]
+        return None
+    else:
+        return None
 
 class RvytGUI(Frame):
     """A Frame that contains all the controls for the application."""
-    def __init__(self, parent, initval):
+    def __init__(self, parent, config):
         Frame.__init__(self, parent)
-        self.remember = initval
-        self.__create_widgets()
+        self.config = config
 
-    def __create_widgets(self):
-        pil = PIL.Image.open('rvideos.png')
-        self.reddit_tk = ImageTk.PhotoImage(pil)
-        lbl = Label(self, image=self.reddit_tk)
-        lbl.grid(row=0,column=0,columnspan=4,sticky=W)
-        
-        lbl = Label(self, text='username:')
-        lbl.grid(row=1,column=1,sticky=E)
-        self.reddit_user = Entry(self)
-        self.reddit_user.grid(row=1,column=2, columnspan=2, sticky=(W,E))
-
-        lbl = Label(self, text='password:')
-        lbl.grid(row=2,column=1,sticky=E)
-        self.reddit_passwd = Entry(self, show='*')
-        self.reddit_passwd.grid(row=2,column=2, columnspan=2, sticky=(W,E))
-
-        self.rem_reddit = IntVar()
-        self.chk_reddit = Checkbutton(self, text='remember',
-                variable=self.rem_reddit)
-        self.chk_reddit.grid(row=3,column=3,sticky=W)
-
-        try:
-            user,passwd = self.remember['reddit']
-            self.reddit_user.insert(0,user)
-            self.reddit_passwd.insert(0,passwd)
-            self.rem_reddit.set(1)
-        except KeyError:
-            pass
-
-        lbl = Label(self, text='limit:')
-        lbl.grid(row=4,column=1,sticky=E)
-        self.spinbox = Spinbox(self, values=(10,50,100))
-        self.spinbox.grid(row=4,column=2,sticky=E)
-
-        self.btn_fetch = Button(self, text='fetch', command=self.__fetch)
-        self.btn_fetch.grid(row=4,column=3,sticky=E)
-
-        pil = PIL.Image.open('youtube.png')
-        self.youtube_tk = ImageTk.PhotoImage(pil)
-        lbl = Label(self, image=self.youtube_tk)
-        lbl.grid(row=5,column=0,columnspan=4,sticky=W)
-        
-        lbl = Label(self, text='username:')
-        lbl.grid(row=6,column=1, sticky=E)
-        self.youtube_user = Entry(self)
-        self.youtube_user.grid(row=6,column=2, columnspan=2, sticky=(W,E))
-
-        lbl = Label(self, text='password:')
-        lbl.grid(row=7,column=1, sticky=E)
-        self.youtube_passwd = Entry(self, show='*')
-        self.youtube_passwd.grid(row=7,column=2, columnspan=2, sticky=(W,E))
-
-        self.rem_youtube = IntVar()
-        self.chk_youtube = Checkbutton(self, text='remember',
-                variable=self.rem_youtube)
-        self.chk_youtube.grid(row=8,column=3,sticky=W)
-
-        try:
-            user,passwd = self.remember['youtube']
-            self.youtube_user.insert(0,user)
-            self.youtube_passwd.insert(0,passwd)
-            self.rem_youtube.set(1)
-        except KeyError:
-            pass
-
-        self.btn_save = Button(self, text='save',command=self.__save)
-        self.btn_save.grid(row=9,column=3,sticky=E)
-
-        self.progress = Meter(self, relief='ridge', bd=3)
+        self.progress = Meter(self, relief='ridge', width=150, bd=3)
         self.progress.grid(row=10,column=0,columnspan=4)
+        self.btn_start = Button(self, text='start', 
+                width=10, command=self.__handle_start)
+        self.btn_start.grid(row=10,column=4,sticky=E)
 
-    def __fetch(self):
-        """Event handler for the fetch button."""
+        self.error_queue = Queue.Queue()
+        self.message_queue = Queue.Queue()
+
+    def __handle_start(self):
+        """Handler for the start button."""
         self.__enable_input(False)
-        #
-        # TODO: ideally this should be in a separate module but the code is so
-        # trivial that it's simpler to just copy it across.
-        #
-        # TODO: ideally, this should be running in a separate thread, but it 
-        # seems to be reasonably fast the way it is.
-        #
-        user = self.reddit_user.get()
-        passwd = self.reddit_passwd.get()
-        r = reddit.Reddit(user_agent=USER_AGENT)
-        try:
-            if user and passwd:
-                #
-                # FIXME: broken on Windows?
-                # 
-                r.login(user, passwd)
-            limit = int(self.spinbox.get())
-            entries = r.get_subreddit('videos').get_top(limit=limit)
-            self.entries = []
-            incr = 1.0/limit
-            progress = 0
-            while progress < 1.0:
-                try:                
-                    progress += incr
-                    self.entries.append(RedditEntry(entries.next()))
-                except StopIteration:
-                    progress = 1.0
-                self.progress.set(progress)
-            self.progress.set(1.0, 'Fetched %d entries' % limit)
-
-            self.entries.sort(key=lambda f: f.score, reverse=True)
-
-            fout = open('entries.pickle', 'w')
-            pickle.dump(self.entries, fout)
-            fout.close()
-
-            if self.rem_reddit:
-                self.remember['reddit'] = (user,passwd)
-        except urllib2.URLError:
-            tkMessageBox.showerror(
-                    'Could not login', 'Check your login credentials')
-
-        self.__enable_input(True)
-
-    def __save(self):
-        """Event handler for the save button."""
-        self.__enable_input(False)
-        user = self.youtube_user.get()
-        passwd = self.youtube_passwd.get()
-        self.thread = threading.Thread(target=self.__do_save, args=(user,passwd))
+        self.thread = threading.Thread(target=self.__worker)
         self.thread.start()
-        self.after(50, self.__check_completion)
+        self.after(10, self.__check_completion)
 
-    def __do_save(self, user, passwd):
-        """Performs communication with YouTube on a separate thread."""
-        self.entries = pickle.load(open('entries.pickle'))
+    def __worker(self):
+        """This is the function that runs inside the worker thread."""
         try:
-            save_playlist(user,passwd,self.entries,DEFAULT_TITLE,self.__callback)
-        except gdata.service.CaptchaRequired, cr:
-            tkMessageBox.showerror(
-                    'Could not login', 'Check your login credentials (%s)' % cr)
+            self.message_queue.put(('Logging into Reddit', 0.0))
+            try:
+                self.r = reddit.Reddit(user_agent=USER_AGENT)
+                user = self.config.get('reddit', 'user')
+                passwd = self.config.get('reddit', 'password')
+                if user and passwd:
+                    self.r.login(user, passwd)
+            except urllib2.URLError:
+                self.error_queue.put(('Reddit login failed', 
+                    'Check the configuration file and\nrestart the application'))
+                return
+
+            self.message_queue.put(('Logging into YouTube', 0.0))
+            try:
+                self.yt = youtube_login(self.config.get('youtube', 'user'), 
+                        self.config.get('youtube', 'password'))
+            except (gdata.service.Error, gdata.service.CaptchaRequired) as err:
+                self.error_queue.put(('YouTube login failed', str(err)))
+                return
+
+            self.message_queue.put(('Fetching submissions', 0.0))
+            limit = int(self.config.get('reddit', 'limit'))
+            subreddit = self.r.get_subreddit('videos').get_top(limit=limit)
+            entries = []
+            #incr = 1.0/limit
+            #progress = 0
+            while True:
+                try:                
+                    #progress += incr
+                    #self.progress.set(progress)
+                    entries.append(subreddit.next())
+                except StopIteration:
+                    break
+
+            entries.sort(key=lambda f: f.score, reverse=True)
+
+            self.__save_playlist(entries)
+        except ConfigParser.NoOptionError, noe:
+            self.error_queue.put(('Error parsing configuration file', 
+                str(noe)))
+
+    def __save_playlist(self, entries):
+        self.message_queue.put(('Saving playlist', 0.0))
+        title = self.config.get('youtube', 'title')
+        description = self.config.get('youtube', 'description')
+
+        playlist_feed = self.yt.GetYouTubePlaylistFeed()
+        for pl in playlist_feed.entry:
+            if pl.title.text == title:
+                #
+                # Dammit YouTube, why do you have to be so inconsistent?
+                # playlist.id.text works for DeletePlaylist, doesn't work for
+                # AddPlaylistVideoEntryToPlaylist.
+                # Passing a URI wroks for APVETP but not for DeletePlaylist.
+                # FFS...
+                #
+                response = self.yt.DeletePlaylist(pl.id.text)
+                if response is True:
+                    self.message_queue.put(('Deleted old playlist', 0.0))
+                else:
+                    self.error_queue.put(('Error saving playlist to YouTube', 
+                        'Could not delete existing playlist `%s\'' % title))
+                    return
+
+        new_private_playlistentry = self.yt.AddPlaylist(
+                title, description, True)
+        if isinstance(new_private_playlistentry, gdata.youtube.YouTubePlaylistEntry):
+            playlist_entry_id = new_private_playlistentry.id.text.split('/')[-1]
+            self.message_queue.put(('Created new playlist', 0.0))
+        else:
+            self.error_queue.put(('Error saving playlist to YouTube', 
+                'Could not create new playlist `%s\'' % title))
+
+        playlist_uri = 'http://gdata.youtube.com/feeds/api/playlists/' + playlist_entry_id
+
+        for i,v in enumerate(entries):
+            video_id = get_video_id_from_url(v.url)
+            if video_id:
+                #
+                # FIXME: the last two arguments seem to be ignored.
+                #
+                playlist_video_entry = self.yt.AddPlaylistVideoEntryToPlaylist(
+                    playlist_uri, video_id, v.title, v.permalink)
+
+                if isinstance(playlist_video_entry, 
+                        gdata.youtube.YouTubePlaylistVideoEntry):
+                    pass
+                else:
+                    self.error_queue.put(('Error saving playlist to YouTube', 
+                        'Could not add video `%s\' to playlist' % video_id))
+            else:
+                print v.url, 'skipping'
+
+            self.message_queue.put((None, float(i+1)/len(entries)))
+
+            #
+            # Respect the API call limits.
+            #
+            time.sleep(1)
+        #
+        # TODO: output a list of skipped entries.
+        #
 
     def __check_completion(self):
-        """Checks for completion of the YouTube thread periodically."""
-        self.thread.join(10)
-        if self.thread.isAlive():
-            self.after(50, self.__check_completion)
-            self.update_idletasks()
-        else:
-            if self.rem_youtube:
-                user = self.youtube_user.get()
-                passwd = self.youtube_passwd.get()
-                self.remember['youtube'] = (user,passwd)
+        """Checks for completion of the worker thread periodically."""
+        #
+        # Time is in seconds in threading land.
+        #
+        try:
+            title, message = self.error_queue.get(True, 0.1)
+            tkMessageBox.showerror(title, message)
+            self.progress.set(0)
             self.__enable_input(True)
+            return
+        except Queue.Empty:
+            pass
 
-    def __callback(self, i, total):
-        """Called by save_playlist to update progress."""
-        self.progress.set(float(i)/total)
-        if i == total:
-            self.progress.set(1.0, 'Saved %d entries' % i)
+        while True:
+            try:
+                message, progress = self.message_queue.get(True, 0.1)
+                self.progress.set(progress,message)
+            except Queue.Empty:
+                break
+
+        self.update_idletasks()
+
+        if self.thread.isAlive():
+            #
+            # Time is in millis in Tkinter land.
+            #
+            self.after(10, self.__check_completion)
+        else:
+            self.__enable_input(True)
 
     def __enable_input(self, enable):
         """Disable/enable all interactive GUI widgets."""
-        for w in [ self.reddit_user, self.reddit_passwd, self.chk_reddit,
-                   self.btn_fetch,
-                   self.youtube_user, self.youtube_passwd, self.chk_youtube,
-                   self.btn_save,
-                   self.spinbox ]:
-            w.configure(state=NORMAL if enable else DISABLED)
+        self.btn_start.configure(state=NORMAL if enable else DISABLED)
+
+def create_parser(usage):
+    """Create an object to use for the parsing of command-line arguments."""
+    from optparse import OptionParser
+    parser = OptionParser(usage)
+    parser.add_option(
+            '--debug', 
+            '-d', 
+            dest='debug', 
+            default=False,
+            action='store_true',
+            help='Show debug information')
+    parser.add_option(
+            '--config',
+            '-c',
+            dest='config',
+            type='string',
+            default='rvyt.cfg',
+            help='Load the specified configuration file')
+    return parser
 
 def main():
     root = Tk()
@@ -190,12 +239,15 @@ def main():
     root.resizable(False, False)
     root.title('rvyt')
 
-    try:
-        remember = pickle.load(open('remember.pickle'))
-    except IOError:
-        remember = {}
+    parser = create_parser('usage: %s [options]' % __file__)
+    options, args = parser.parse_args()
+    if len(args) != 0:
+        parser.error('invalid number of arguments')
 
-    gui = RvytGUI(root, remember)
+    cfgparse = ConfigParser.SafeConfigParser()
+    cfgparse.read(options.config)
+
+    gui = RvytGUI(root, cfgparse)
     gui.pack()
     root.mainloop()
 
@@ -203,10 +255,6 @@ def main():
         root.destroy()
     except TclError:
         pass
-
-    fout = open('remember.pickle', 'w')
-    pickle.dump(gui.remember, fout)
-    fout.close()
 
 if __name__ == '__main__':
     main()

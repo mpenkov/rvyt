@@ -1,4 +1,6 @@
 gitignore/
+dist/
+build/
 *.o
 *.out
 *.pyc

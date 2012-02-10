@@ -25,3 +25,11 @@ Providing the username and password is compulsory for YouTube.
    allows this according to the documentation, but it doesn't seem to work in
    real life).
  - Option to exclude videos that you've already seen
+
+# Acknowledgements
+
+- The ProgressMeter code is by Michael Lange <klappnase (at) freakmail (dot)
+  de> (http://tkinter.unpythonic.net/wiki/ProgressMeter)
+- reddit.ico is from
+  http://www.veryicon.com/icons/internet--web/aquaticus-social/reddit.html
+  (Creative Commons Attribution-No Derivative Works 3.0)

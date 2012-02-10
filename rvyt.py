@@ -238,8 +238,9 @@ def main():
     root.option_add('*tearOff', False)
     root.resizable(False, False)
     root.title('rvyt')
+    root.iconbitmap('Reddit2.ico')
 
-    parser = create_parser('usage: %s [options]' % __file__)
+    parser = create_parser('usage: rvyt.exe [options]')
     options, args = parser.parse_args()
     if len(args) != 0:
         parser.error('invalid number of arguments')

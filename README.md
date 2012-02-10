@@ -16,7 +16,8 @@ Reddit supports anonymous browsing, so you don't need to specify your username
 and password if you don't want to.  If you do, then the subreddit will be
 personalized for you.
 
-Providing the username and password is compulsory for YouTube.
+Providing the username and password is compulsory for YouTube (there is no way
+to create a playlist without logging in first).
 
 # Future features:
 
@@ -28,6 +29,8 @@ Providing the username and password is compulsory for YouTube.
 
 # Acknowledgements
 
+- Reddit API is by mellort (https://github.com/mellort/reddit_api.git)
+- YouTube API is by Google (http://code.google.com/apis/youtube/1.0/developers_guide_python.html)
 - The ProgressMeter code is by Michael Lange <klappnase (at) freakmail (dot)
   de> (http://tkinter.unpythonic.net/wiki/ProgressMeter)
 - reddit.ico is from

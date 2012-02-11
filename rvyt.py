@@ -99,12 +99,8 @@ class RvytGUI(Frame):
             limit = int(self.config.get('reddit', 'limit'))
             subreddit = self.r.get_subreddit('videos').get_top(limit=limit)
             entries = []
-            #incr = 1.0/limit
-            #progress = 0
             while True:
                 try:                
-                    #progress += incr
-                    #self.progress.set(progress)
                     entries.append(subreddit.next())
                 except StopIteration:
                     break

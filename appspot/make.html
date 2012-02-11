@@ -1,0 +1,32 @@
+<html>
+    <head>
+        <link type="text/css" rel="stylesheet" href="/stylesheets/main.css" />
+    </head>
+    <body>
+        <script>
+            channel = new goog.appengine.Channel('{{ token }}');
+            socket = channel.open();
+            socket.onopen = onOpened;
+            socket.onmessage = onMessage;
+            socket.onerror = onError;
+            socket.onclose = onClose;
+        </script>
+
+        <p>Your playlist is <a href="{{ playlist_url }}">here</a>.</p>
+
+        <p>Details:</p>
+
+        <ol>
+            {% for item in results %}
+            <li><a href="{{item.0}}">{{item.0}}</a> {{item.1}}</li>
+            {% endfor %}
+        </ol>
+
+        <p>Problems?  Please let me know about them: misha [dot] penkov [at] gmail [dot] com</p>
+
+        <p>[ <a href="http://www.reddit.com/r/videos">reddit</a> | 
+        <a href="http://www.youtube.com">youtube</a> |
+        <a href="https://github.com/mpenkov/rvyt">rvyt@github</a> ]</p>
+
+    </body>
+</html>

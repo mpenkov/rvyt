@@ -1,0 +1,56 @@
+<html>
+  <head>
+    <link type="text/css" rel="stylesheet" href="/stylesheets/main.css" />
+  </head>
+  <body>
+      <p>This Web application grabs top videos from Reddit and makes a YouTube
+      playlist that you can watch.  Enter your details below and click on
+      "Make playlist".  It's currently very slow (approximately 15 seconds for
+      10 results), so please be patient.</p>
+      <!-- <p><a href="{{ url }}">YouTube Login</a> (optional)</p> -->
+    <form action="/make" method="post">
+        <table>
+            <tr>
+                <td>YouTube username:</td>
+                <td><input type="text" name="user"></td>
+            </tr>
+            <tr>
+                <td>YouTube password<sup>*</sup>:</td>
+                <td><input type="password" name="passwd"></td>
+            </tr>
+            <tr>
+                <td>List title:</td>
+                <td><input type="text" name="title" value="Reddit videos"></td>
+            </tr>
+            <tr>
+                <td>List description:</td>
+                <td><input type="text" name="description" value="Made by rvyt (https://github.com/mpenkov/rvyt)" size="50"></td>
+            </tr>
+            <tr>
+                <td>Limit:</td>
+                <td>
+                    <input type="radio" name="limit" value="10" checked="true">10
+                    <input type="radio" name="limit" value="25">25
+                    <!-- <input type="radio" name="limit" value="50">50 -->
+                    <!-- <input type="radio" name="limit" value="100">100 -->
+                </td>
+            </tr>
+            <tr>
+                <td><input type="hidden" name="token" value="{{ token }}"></td>
+                <td><input type="submit" value="Make playlist"></td>
+            </tr>
+        </table>
+    </form>
+
+    <p><sup>*</sup>I promise not to do anything naughty with your username or password.
+    If you can't take my word for it, please come back in a little while, after I get
+    OAuth authentication working properly.</p>
+
+    <p>Problems?  Please let me know about them: misha [dot] penkov [at] gmail [dot] com</p>
+
+    <p>[ <a href="http://www.reddit.com/r/videos">reddit</a> | 
+    <a href="http://www.youtube.com">youtube</a> |
+    <a href="https://github.com/mpenkov/rvyt">rvyt@github</a> ]</p>
+
+  </body>
+</html>

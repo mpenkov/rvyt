@@ -3,14 +3,63 @@
         <link type="text/css" rel="stylesheet" href="/stylesheets/main.css" />
     </head>
     <body>
-        <script>
-            channel = new goog.appengine.Channel('{{ token }}');
-            socket = channel.open();
-            socket.onopen = onOpened;
-            socket.onmessage = onMessage;
-            socket.onerror = onError;
-            socket.onclose = onClose;
+        <script src='/_ah/channel/jsapi'></script>
+        <script type="text/javascript">
+            
+            String.prototype.format = function() {
+              var args = arguments;
+              return this.replace(/{(\d+)}/g, function(match, number) { 
+                return typeof args[number] != 'undefined'
+                  ? args[number]
+                  : match
+                ;
+              });
+            };
+
+            var channel = new goog.appengine.Channel('{{ token }}');
+            var socket = channel.open();
+            socket.onopen = function() {
+                console.debug("Opened socket!");
+            };
+            socket.onmessage = function(message) {
+                var output = '';
+                for (property in message) {
+                  output += property + ': ' + message[property]+'; ';
+                }
+                console.debug("Message:" + output);
+
+                json = eval('(' + message['data'] + ')');
+                if ('video_url' in json) {
+                    var div_progress = document.getElementById("div_progress");
+                    div_progress.innerHTML += '<li><a href="{0}">{0}</a> {1}</li>'.format( json['video_url'], json['status']);
+                } else {
+                    var div_status = document.getElementById("div_status");
+                    if (json['status'] == 'finished') {
+                        div_status.innerHTML = '<p>Current status: all done!  Your playlist is <a href="{0}">here</a>.</p>'.format(json['plist_url']);
+                    } else {
+                        div_status.innerHTML = '<p>Current status: {0}</p>'.format(json['status']);
+                    }
+                } 
+            };
+            socket.onerror = function(message) {
+                console.debug("Error:" + message);
+            };
+            socket.onclose = function() {
+                console.debug("Closed socket!");
+            };
         </script>
+
+        <div id="div_status"><p>Current status: initialized</p></div>
+
+        <ol>
+        <div id="div_progress">
+
+        </div>
+        </ol>
+
+        <div id="div_playlist"></div>
+
+        <!--
 
         <p>Your playlist is <a href="{{ playlist_url }}">here</a>.</p>
 
@@ -21,6 +70,8 @@
             <li><a href="{{item.0}}">{{item.0}}</a> {{item.1}}</li>
             {% endfor %}
         </ol>
+
+        -->
 
         <p>Problems?  Please let me know about them: misha [dot] penkov [at] gmail [dot] com</p>
 

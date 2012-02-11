@@ -87,10 +87,7 @@ class MainPage(webapp.RequestHandler):
             url = users.create_login_url(self.request.uri)
             url_linktext = 'Login'
 
-
-        channel_id = str(random.randint(1,10000))+str(datetime.datetime.now())
-        template_values = { 'url': url, 'channel_id': channel_id }
-
+        template_values = { 'url': url }
         path = os.path.join(os.path.dirname(__file__), 'index.html')
         self.response.out.write(template.render(path, template_values))
 
@@ -98,13 +95,13 @@ class Make(webapp.RequestHandler):
     def post(self):
         user = self.request.get('user')
         passwd = self.request.get('passwd')
-        channel_id = self.request.get('channel_id')
         title = self.request.get('title')
         description = self.request.get('description')
         limit = self.request.get('limit')
 
-        token = channel.create_channel(channel_id)
-        template_values = { 'token': token }
+        channel_id = str(random.randint(1,10000))+str(datetime.datetime.now())
+
+        template_values = { 'token': channel.create_channel(channel_id) }
         path = os.path.join(os.path.dirname(__file__), 'make.html')
         self.response.out.write(template.render(path, template_values))
 
@@ -208,6 +205,12 @@ class Worker(webapp.RequestHandler):
         #channel.send_message(channel_id, 'Fetching entries')
 
         for i,v in enumerate(entries):
+            #
+            # FIXME: calls inside this loop can fail with 
+            # "too many recent calls".  Need to handle that exception as 
+            # otherwise it will force a restart of the task, which is not
+            # good.
+            #
             video_id = get_video_id_from_url(v.url)
             if video_id:
                 #

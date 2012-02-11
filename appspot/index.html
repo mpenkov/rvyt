@@ -29,22 +29,22 @@
             <tr>
                 <td>Limit:</td>
                 <td>
-                    <input type="radio" name="limit" value="1" checked="true">1
+                    <!-- <input type="radio" name="limit" value="1" checked="true">1 -->
                     <input type="radio" name="limit" value="5">5
-                    <input type="radio" name="limit" value="10">10
+                    <input type="radio" name="limit" value="10" checked="true">10
                     <input type="radio" name="limit" value="25">25
-                    <!-- <input type="radio" name="limit" value="50">50 -->
+                    <input type="radio" name="limit" value="50">50
                     <!-- <input type="radio" name="limit" value="100">100 -->
                 </td>
             </tr>
             <tr>
-                <td><input type="hidden" name="channel_id" value="{{ channel_id }}"></td>
+                <td></td>
                 <td><input type="submit" value="Make playlist"></td>
             </tr>
         </table>
     </form>
 
-    <p>channel_id: {{ channel_id }}</p>
+    <!-- <p>channel_id: {{ channel_id }}</p> -->
 
     <p><sup>*</sup>I promise not to do anything naughty with your username or password.
     If you can't take my word for it, please come back in a little while, after I get

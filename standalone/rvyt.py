@@ -234,7 +234,10 @@ def main():
     root.option_add('*tearOff', False)
     root.resizable(False, False)
     root.title('rvyt')
-    root.iconbitmap('Reddit2.ico')
+    #
+    # FIXME: Not working on Linux for some reason.
+    # 
+    #root.iconbitmap('Reddit2.ico')
 
     parser = create_parser('usage: rvyt.exe [options]')
     options, args = parser.parse_args()

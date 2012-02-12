@@ -19,7 +19,7 @@ personalized for you.
 Providing the username and password is compulsory for YouTube (there is no way
 to create a playlist without logging in first).
 
-# Future features:
+# Future features
 
  - Upvote the videos that you give a thumbs up for
  - Include links to the reddit permalink in the playlist comments (the API 

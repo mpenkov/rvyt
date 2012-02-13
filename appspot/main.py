@@ -117,6 +117,11 @@ class Make(webapp.RequestHandler):
         
 class Worker(webapp.RequestHandler):
     def post(self):
+        #
+        # Wait till the socket opens on the client side before we do anything.
+        #
+        time.sleep(1)
+
         user = self.request.get('user')
         passwd = self.request.get('passwd')
         channel_id = self.request.get('channel_id')
@@ -184,8 +189,6 @@ class Worker(webapp.RequestHandler):
                 raise RuntimeError(
                         'Unable to delete existing playlist: %s' % title)
 
-        #channel.send_message(channel_id, 'Creating playlist')
-
         channel.send_message(
                 channel_id, 
                 simplejson.dumps({ 'status' : 'creating new playlist' }))
@@ -206,10 +209,9 @@ class Worker(webapp.RequestHandler):
 
         for i,v in enumerate(entries):
             #
-            # FIXME: calls inside this loop can fail with 
-            # "too many recent calls".  Need to handle that exception as 
-            # otherwise it will force a restart of the task, which is not
-            # good.
+            # FIXME: calls inside this loop can fail with "too many recent
+            # calls".  Need to handle that exception as otherwise it will force
+            # a restart of the task, which is not good.
             #
             video_id = get_video_id_from_url(v.url)
             if video_id:

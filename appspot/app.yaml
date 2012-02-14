@@ -6,9 +6,10 @@ api_version: 1
 handlers:
 - url: /stylesheets
   static_dir: stylesheets
+- url: /js
+  static_dir: js
+- url: /oauth2callback
+  script: oauth2client/appengine.py
 
 - url: /.*
   script: main.py
-
-inbound_services:
-- channel_presence

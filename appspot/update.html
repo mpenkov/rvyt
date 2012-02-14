@@ -1,0 +1,27 @@
+<html>
+    <head>
+        <link type="text/css" rel="stylesheet" href="/stylesheets/main.css" />
+    </head>
+  <body>      
+      <h1>Welcome</h1>
+
+      <p>Move along, nothing to see here.</p>
+
+      <ol>
+      {% for e in entries %}
+      <li><a href="{{e.url}}">{{e.url}}</a></li>
+      {% endfor %}
+      </ol>
+
+    <!-- <p>channel_id: {{ channel_id }}</p> -->
+
+    <h2>Problems, comments or suggestions?</h2>
+    
+    <p>Please let me know about them: misha [dot] penkov [at] gmail [dot] com</p>
+
+    <p>[ <a href="http://www.reddit.com/r/videos">reddit</a> | 
+    <a href="http://www.youtube.com">youtube</a> |
+    <a href="https://github.com/mpenkov/rvyt">rvyt@github</a> ]</p>
+
+  </body>
+</html>

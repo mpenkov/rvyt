@@ -3,22 +3,15 @@
         <meta name="google-site-verification" content="Z4QNJAX48JgbeEZm4yAwC0rWyapuCHE4RDO8MaE6DGc" />
         <link type="text/css" rel="stylesheet" href="/stylesheets/main.css" />
     </head>
-  <body>
+  <body>      
+      <h1>Welcome</h1>
+     
       <p>This Web application grabs top videos from Reddit and makes a YouTube
-      playlist that you can watch.  Enter your details below and click on
-      "Make playlist".  It's currently very slow (approximately 15 seconds for
-      10 results), so please be patient.</p>
+      playlist that you can watch.</p>  
       <!-- <p><a href="{{ url }}">YouTube Login</a> (optional)</p> -->
+    {% if has_credentials %}
     <form action="/make" method="post">
         <table>
-            <tr>
-                <td>YouTube username:</td>
-                <td><input type="text" name="user"></td>
-            </tr>
-            <tr>
-                <td>YouTube password<sup>*</sup>:</td>
-                <td><input type="password" name="passwd"></td>
-            </tr>
             <tr>
                 <td>List title:</td>
                 <td><input type="text" name="title" value="Reddit videos"></td>
@@ -30,12 +23,12 @@
             <tr>
                 <td>Limit:</td>
                 <td>
-                    <!-- <input type="radio" name="limit" value="1" checked="true">1 -->
+                    <input type="radio" name="limit" value="1" checked="true">1
                     <input type="radio" name="limit" value="5">5
-                    <input type="radio" name="limit" value="10" checked="true">10
+                    <input type="radio" name="limit" value="10">10
                     <input type="radio" name="limit" value="25">25
                     <input type="radio" name="limit" value="50">50
-                    <!-- <input type="radio" name="limit" value="100">100 -->
+                    <input type="radio" name="limit" value="100">100
                 </td>
             </tr>
             <tr>
@@ -44,14 +37,23 @@
             </tr>
         </table>
     </form>
+    <p>After you have finished using the application, click 
+    <a href="https://www.google.com/accounts/b/0/IssuedAuthSubTokens">here</a> 
+    to revoke the granted credentials.</p>
 
-    <!-- <p>channel_id: {{ channel_id }}</p> -->
+    {% else %}
+    <p>This application requires permission to access your YouTube account.
+    Click <a href="{{ url }}">here</a> to grant this permission.  You can 
+    <a href="https://www.google.com/accounts/b/0/IssuedAuthSubTokens">revoke</a> 
+    this permission at any time.</p>
+    {% endif %}
 
-    <p><sup>*</sup>I promise not to do anything naughty with your username or password.
-    If you can't take my word for it, please come back in a little while, after I get
-    OAuth authentication working properly.</p>
+    <h2>Problems, comments or suggestions?</h2>
+    
+    <p>Please let me know about them: misha [dot] penkov [at] gmail [dot] com</p>
 
-    <p>Problems?  Please let me know about them: misha [dot] penkov [at] gmail [dot] com</p>
+    <p>The local cache of the /r/videos subreddit was last updated at 
+    {{last_update}}.</p>
 
     <p>[ <a href="http://www.reddit.com/r/videos">reddit</a> | 
     <a href="http://www.youtube.com">youtube</a> |

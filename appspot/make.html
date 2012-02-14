@@ -3,81 +3,83 @@
         <link type="text/css" rel="stylesheet" href="/stylesheets/main.css" />
     </head>
     <body>
-        <script src='/_ah/channel/jsapi'></script>
-        <script type="text/javascript">
-            
-            String.prototype.format = function() {
-              var args = arguments;
-              return this.replace(/{(\d+)}/g, function(match, number) { 
-                return typeof args[number] != 'undefined'
-                  ? args[number]
-                  : match
-                ;
-              });
-            };
+        <h1>Result</h1>
 
-            var channel = new goog.appengine.Channel('{{ token }}');
-            var socket = channel.open();
-            socket.onopen = function() {
-                console.debug("Opened socket!");
-            };
-            socket.onmessage = function(message) {
-                var output = '';
-                for (property in message) {
-                  output += property + ': ' + message[property]+'; ';
-                }
-                console.debug("Message:" + output);
+        <p>Your playlist is <a href="{{plist_url}}">here</a>.  
+        It is <span id="percent_complete">0</span>% complete.</p>
 
-                json = eval('(' + message['data'] + ')');
-                if ('video_url' in json) {
-                    var div_progress = document.getElementById("div_progress");
-                    div_progress.innerHTML += '<li><a href="{0}">{0}</a> {1}</li>'.format( json['video_url'], json['status']);
-                } else {
-                    var div_status = document.getElementById("div_status");
-                    if (json['status'] == 'finished') {
-                        div_status.innerHTML = '<p>Current status: all done!  Your playlist is <a href="{0}">here</a>.</p>'.format(json['plist_url']);
-                    } else {
-                        div_status.innerHTML = '<p>Current status: {0}</p>'.format(json['status']);
-                    }
-                } 
-            };
-            socket.onerror = function(message) {
-                console.debug("Error:" + message);
-            };
-            socket.onclose = function() {
-                console.debug("Closed socket!");
-            };
-        </script>
+        <h2>Problems, comments or suggestions?</h2>
 
-        <div id="div_status"><p>Current status: initialized</p></div>
-
-        <ol>
-        <div id="div_progress">
-
-        </div>
-        </ol>
-
-        <div id="div_playlist"></div>
-
-        <!--
-
-        <p>Your playlist is <a href="{{ playlist_url }}">here</a>.</p>
-
-        <p>Details:</p>
-
-        <ol>
-            {% for item in results %}
-            <li><a href="{{item.0}}">{{item.0}}</a> {{item.1}}</li>
-            {% endfor %}
-        </ol>
-
-        -->
-
-        <p>Problems?  Please let me know about them: misha [dot] penkov [at] gmail [dot] com</p>
+        <p>Please let me know about them: misha [dot] penkov [at] gmail [dot] com</p>
 
         <p>[ <a href="http://www.reddit.com/r/videos">reddit</a> | 
         <a href="http://www.youtube.com">youtube</a> |
         <a href="https://github.com/mpenkov/rvyt">rvyt@github</a> ]</p>
 
+        <script src='/_ah/channel/jsapi'></script>
+        <!-- 
+        The JavaScript reference says that all JS needs to go in the body:
+        http://code.google.com/appengine/docs/python/channel/javascript.html
+        This is required for the Django string substitution stuff to work.
+
+        It's a real pain in the ass.
+        http://vim.wikia.com/wiki/How_to_stop_auto_indenting
+
+        :setlocal noautoindent
+        :setlocal nocindent
+        :setlocal nosmartindent
+        :setlocal indentexpr=
+        -->
+        <script type="text/javascript" src="js/make.js"></script>
+        <script type="text/javascript">
+onOpen = function() {
+    console.debug('Opened socket')
+    var request = new XMLHttpRequest();
+    request.open('POST', '/opened');
+    var params = { 
+            'channel_id' : '{{channel_id}}',
+            'plist_uri' : '{{plist_uri}}',
+            'limit' : '{{limit}}' };
+    //
+    // From O'Reilly textbook page 503
+    // Replace ALL encoded spaces using regular expressions.
+    //
+    var pairs = [ ];
+    for (var name in params) {
+        var value = params[name].toString();
+        name = encodeURIComponent(name).replace(/%20/g, '+');
+        value = encodeURIComponent(value).replace(/%20/g, '+');
+        pairs.push(name + '=' + value);
+    }
+    request.setRequestHeader(
+            'Content-Type', 
+            'application/x-www-form-urlencoded')
+
+    data = pairs.join('&')
+    request.send(data);
+};
+
+var completed = 0;
+var percentComplete = document.getElementById('percent_complete');
+onMessage = function(message) {
+    if (message['data'] == 'done') {
+        completed += 1;
+    }
+    percent_complete.innerHTML = (100*completed/{{limit}}).toFixed(0);
+};
+
+onError = function(message) {
+    console.debug("Error:" + messageToStr(message));
+};
+
+onClose = function() {
+    console.debug("Closed socket");
+};
+
+var channel = new goog.appengine.Channel('{{ token }}');
+var handler = { 'onopen' : onOpen, 'onmessage' : onMessage,
+                'onerror' : onError, 'onclose' : onClose }
+var socket = channel.open(handler);
+        </script>
     </body>
 </html>

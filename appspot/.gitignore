@@ -1,3 +1,11 @@
 atom
 gdata
 reddit
+client_secrets.json
+apiclient
+cron.yaml
+gflags_validators.py
+gflags.py
+httplib2
+oauth2client
+uritemplate

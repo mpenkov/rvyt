@@ -157,11 +157,20 @@ def get_video_id_from_url(url):
         args = p.query.split(';')
         video_id = None
         try:
+            #
+            # http://www.youtube.com/watch?v=WTGUjRJiqik
+            #
             for key,val in map(lambda f: f.split('='), args):
                 if key == 'v':
                     return val[:11]
         except ValueError:
             pass
+
+        if compo[-2] == 'v':
+            #
+            # http://www.youtube.com/v/WTGUjRJiqik
+            #
+            return compo[-1]
         return None
     else:
         return None
@@ -192,7 +201,7 @@ class MainPage(webapp.RequestHandler):
         if decorator.has_credentials():
             if decorator.credentials.access_token_expired:
                 #
-                # FIXME: this doesn't seem to work.
+                # FIXME: this doesn't seem to work, at least locally.
                 #
                 decorator.credentials.authorize(http)
             #
@@ -222,6 +231,20 @@ class MainPage(webapp.RequestHandler):
         path = os.path.join(os.path.dirname(__file__), 'index.html')
         self.response.out.write(template.render(path, variables))
 
+PLAYLIST_URI = 'http://gdata.youtube.com/feeds/api/playlists/'
+PLAYLIST_URL = 'http://www.youtube.com/playlist?list='
+
+QUOTA = "<?xml version='1.0' encoding='UTF-8'?><errors><error><domain>yt:quota</domain><code>too_many_recent_calls</code></error></errors>"
+
+from xml.dom.minidom import parseString
+def parse_request_error(err):
+    body = err[0]['body']
+    if body.startswith("<?xml version='1.0' encoding='UTF-8'?>"):
+        dom = parseString(body)
+        return dom.getElementsByTagName('code')[0].firstChild.data
+    else:
+        return body
+
 class Make(webapp.RequestHandler):
     @decorator.oauth_required
     def post(self):
@@ -240,46 +263,40 @@ class Make(webapp.RequestHandler):
         token = credentials_to_oauth_token(decorator.credentials)
         try:
             youtube_api = youtube_login(token)
-        except gdata.service.Error, e:
-            #
-            # TODO
-            #
-            assert False
 
-        playlist_id = get_playlist_id_from_title(youtube_api, title)
-        if playlist_id:
-            #
-            # Dammit YouTube API, why do you have to be so inconsistent?
-            # playlist.id.text works for DeletePlaylist, doesn't work for
-            # AddPlaylistVideoEntryToPlaylist.
-            # Passing a URI wroks for APVETP but not for DeletePlaylist.
-            # FFS...
-            #
-            response = youtube_api.DeletePlaylist(playlist_id)
-            if not response:
+            playlist_id = get_playlist_id_from_title(youtube_api, title)
+            if playlist_id:
                 #
-                # TODO
-                # 
-                assert False
+                # Dammit YouTube API, why do you have to be so inconsistent?
+                # playlist.id.text works for DeletePlaylist, doesn't work for
+                # AddPlaylistVideoEntryToPlaylist.
+                # Passing a URI works for APVETP but not for DeletePlaylist.
+                # FFS...
+                #
+                response = youtube_api.DeletePlaylist(playlist_id)
+                if not response:
+                    raise gdata.service.Error, 'Could not delete playlist'
 
-        new_playlistentry = youtube_api.AddPlaylist(title, description)
-        if isinstance(new_playlistentry, gdata.youtube.YouTubePlaylistEntry):
-            playlist_id = new_playlistentry.id.text.split('/')[-1]
-        else:
-            #
-            # TODO
-            #
-            assert False
+            new_playlistentry = youtube_api.AddPlaylist(title, description)
+            if isinstance(new_playlistentry, gdata.youtube.YouTubePlaylistEntry):
+                playlist_id = new_playlistentry.id.text.split('/')[-1]
+            else:
+                raise gdata.service.Error, 'Could not create playlist'
 
-        plist_uri = 'http://gdata.youtube.com/feeds/api/playlists/' + playlist_id
-        plist_url = 'http://www.youtube.com/playlist?list=' + playlist_id
+            plist_uri = PLAYLIST_URI + playlist_id
+            plist_url = PLAYLIST_URL + playlist_id
+            template_values = { 
+                    'token': channel.create_channel(channel_id),
+                    'plist_uri' : plist_uri, 
+                    'plist_url' : plist_url,
+                    'channel_id' : channel_id,
+                    'limit' : limit }
+        except gdata.service.Error, err:
+            logging.error('gdata.service.Error' + str(err))
+            template_values = { 
+                    'token' : '', 
+                    'error' : parse_request_error(err) }
 
-        template_values = { 
-                'token': channel.create_channel(channel_id),
-                'plist_uri' : plist_uri, 
-                'plist_url' : plist_url,
-                'channel_id' : channel_id,
-                'limit' : limit }
         path = os.path.join(os.path.dirname(__file__), 'make.html')
         self.response.out.write(template.render(path, template_values))
 
@@ -303,12 +320,11 @@ class Opened(webapp.RequestHandler):
             # calls".  Need to handle that exception as otherwise it will force
             # a restart of the task, which is not good.
             #
-            video_id = get_video_id_from_url(v.url)
             params = { 
                     'plist_uri' : self.request.get('plist_uri'),
                     'channel_id' : self.request.get('channel_id'),
                     'limit': str(limit),
-                    'video_id' : video_id,
+                    'url' : v.url,
                     'title' : v.title,
                     'permalink' : v.permalink,
                     'token' : str(pickle.dumps(token))
@@ -325,6 +341,7 @@ class Worker(webapp.RequestHandler):
         channel_id = self.request.get('channel_id')
         plist_uri = self.request.get('plist_uri')
         video_id = self.request.get('video_id')
+        url = self.request.get('url')
         title = self.request.get('title')
         permalink = self.request.get('permalink')
 
@@ -336,20 +353,43 @@ class Worker(webapp.RequestHandler):
         token_str = str(self.request.get('token'))
         token = pickle.loads(token_str)
 
-        #
-        # Honor the YouTube API limits.
-        #
-        time.sleep(1)
+        delay = 0.01
+        payload = { 'url' : url } 
+        video_id = get_video_id_from_url(url)
+        if not video_id:
+            payload['error'] = 'skipped'
+        else:
+            try:
+                youtube_api = youtube_login(token)
+                #
+                # If we've used up all of our quota, wait a little bit before
+                # trying again.  The wait delay is doubled each time.  Give up
+                # when the delay reaches 1 minute.
+                #
+                while delay < 60:
+                    try:
+                        plve = youtube_api.AddPlaylistVideoEntryToPlaylist(
+                            plist_uri, video_id, title, permalink)
+                        if not isinstance(
+                                plve, 
+                                gdata.youtube.YouTubePlaylistVideoEntry):
+                            raise gdata.service.Error, 'bad instance'
+                        break
+                    except gdata.service.Error, err:
+                        logging.error('gdata.service.Error' + str(err))
+                        code = parse_request_error(err)
+                        if code == 'too_many_recent_calls':
+                            delay = delay*2
+                            time.sleep(delay)
+                            continue
+                        else:
+                            payload['error'] = code
+                            break
+            except gdata.service.Error, err:
+                logging.error('gdata.service.Error' + str(err))
+                payload['error'] = err[0]['reason']
 
-        try:
-            youtube_api = youtube_login(token)
-            plve = youtube_api.AddPlaylistVideoEntryToPlaylist(
-                plist_uri, video_id, title, permalink)
-            if not isinstance(plve, gdata.youtube.YouTubePlaylistVideoEntry):
-                raise gdata.service.Error, 'bad instance'
-        except gdata.service.Error, err:
-            logging.error('gdata.service.Error' + str(err))
-        channel.send_message(channel_id, 'done')
+        channel.send_message(channel_id, simplejson.dumps(payload))
 
 class Updater(webapp.RequestHandler):
     """Pull REDDIT_ENTRY_LIMIT entries from /r/videos into the data store."""

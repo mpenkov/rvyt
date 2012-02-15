@@ -8,6 +8,12 @@
         <p>Your playlist is <a href="{{plist_url}}">here</a>.  
         It is <span id="percent_complete">0</span>% complete.</p>
 
+        <h2>Errors</h2>
+
+        Errors that the application encountered will be listed below.
+
+        <ol id="errors"></ol>
+
         <h2>Problems, comments or suggestions?</h2>
 
         <p>Please let me know about them: misha [dot] penkov [at] gmail [dot] com</p>
@@ -61,9 +67,15 @@ onOpen = function() {
 
 var completed = 0;
 var percentComplete = document.getElementById('percent_complete');
+var errors = document.getElementById('errors');
 onMessage = function(message) {
-    if (message['data'] == 'done') {
-        completed += 1;
+    completed += 1;
+    data = JSON.parse(message['data']);
+    if ('error' in data) {
+        var li = document.createElement('li');
+        li.innerHTML = '<a href="{0}">{0}</a> ({1})'.format(
+                data['url'], data['error']);
+        errors.appendChild(li)
     }
     percent_complete.innerHTML = (100*completed/{{limit}}).toFixed(0);
 };
@@ -76,10 +88,12 @@ onClose = function() {
     console.debug("Closed socket");
 };
 
-var channel = new goog.appengine.Channel('{{ token }}');
-var handler = { 'onopen' : onOpen, 'onmessage' : onMessage,
-                'onerror' : onError, 'onclose' : onClose }
-var socket = channel.open(handler);
+if ('{{token}}') {
+    var channel = new goog.appengine.Channel('{{ token }}');
+    var handler = { 'onopen' : onOpen, 'onmessage' : onMessage,
+                    'onerror' : onError, 'onclose' : onClose }
+    var socket = channel.open(handler);
+}
         </script>
     </body>
 </html>

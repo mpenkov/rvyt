@@ -4,10 +4,12 @@ runtime: python
 api_version: 1
 
 handlers:
-- url: /stylesheets
-  static_dir: stylesheets
+- url: /css
+  static_dir: css
 - url: /js
   static_dir: js
+- url: /img
+  static_dir: img
 - url: /oauth2callback
   script: oauth2client/appengine.py
 

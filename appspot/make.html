@@ -1,43 +1,89 @@
 <html>
-    <head>
-        <link type="text/css" rel="stylesheet" href="/stylesheets/main.css" />
-    </head>
+  <head>
+    <meta charset="utf-8">
+    <title>rvyt: Reddit Videos to YouTube Playlist</title>
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <!-- Le HTML5 shim, for IE6-8 support of HTML elements -->
+    <!--[if lt IE 9]>
+      <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <!-- Le styles -->
+    <link href="css/bootstrap.css" rel="stylesheet">
+    <style>
+      body {
+        padding-top: 60px; /* 60px to make the container go all the way to the bottom of the topbar */
+      }
+    </style>
+    <link href="css/bootstrap-responsive.css" rel="stylesheet">
+
+    <!-- Le fav and touch icons -->
+    <link rel="shortcut icon" href="img/favicon.ico">
+    <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
+    <link rel="apple-touch-icon" sizes="72x72" href="img/apple-touch-icon-72x72.png">
+    <link rel="apple-touch-icon" sizes="114x114" href="img/apple-touch-icon-114x114.png">
+  </head>
     <body>
-        <h1>Result</h1>
+    <div class="navbar navbar-fixed-top">
+      <div class="navbar-inner">
+        <div class="container">
+          <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </a>
+          <a class="brand" href="#">rvyt</a>
+          <div class="nav-collapse">
+            <ul class="nav">
+              <li class="active"><a href="#">Home</a></li>
+              <li><a href="#about">About</a></li>
+              <li><a href="#contact">Contact</a></li>
+            </ul>
+          </div><!--/.nav-collapse -->
+        </div>
+      </div>
+    </div>
+    <div class="container">
 
-        <p>Your playlist is <a href="{{plist_url}}">here</a>.  
-        It is <span id="percent_complete">0</span>% complete.</p>
+<h1>Result</h1>
 
-        <h2>Errors</h2>
+<p>Your playlist is <a href="{{plist_url}}">here</a>.  
+It is <span id="percent_complete">0</span>% complete.</p>
 
-        Errors that the application encountered will be listed below.
+<h2>Errors</h2>
 
-        <ol id="errors"></ol>
+Errors that the application encountered will be listed below.
 
-        <h2>Problems, comments or suggestions?</h2>
+<ol id="errors"></ol>
 
-        <p>Please let me know about them: misha [dot] penkov [at] gmail [dot] com</p>
+<h2>Problems, comments or suggestions?</h2>
 
-        <p>[ <a href="http://www.reddit.com/r/videos">reddit</a> | 
-        <a href="http://www.youtube.com">youtube</a> |
-        <a href="https://github.com/mpenkov/rvyt">rvyt@github</a> ]</p>
+<p>Please let me know about them: misha [dot] penkov [at] gmail [dot] com</p>
 
-        <script src='/_ah/channel/jsapi'></script>
-        <!-- 
-        The JavaScript reference says that all JS needs to go in the body:
-        http://code.google.com/appengine/docs/python/channel/javascript.html
-        This is required for the Django string substitution stuff to work.
+<p>[ <a href="http://www.reddit.com/r/videos">reddit</a> | 
+<a href="http://www.youtube.com">youtube</a> |
+<a href="https://github.com/mpenkov/rvyt">rvyt@github</a> ]</p>
 
-        It's a real pain in the ass.
-        http://vim.wikia.com/wiki/How_to_stop_auto_indenting
+    </div> <!-- /container -->
 
-        :setlocal noautoindent
-        :setlocal nocindent
-        :setlocal nosmartindent
-        :setlocal indentexpr=
-        -->
-        <script type="text/javascript" src="js/make.js"></script>
-        <script type="text/javascript">
+<script src='/_ah/channel/jsapi'></script>
+<!-- 
+The JavaScript reference says that all JS needs to go in the body:
+http://code.google.com/appengine/docs/python/channel/javascript.html
+This is required for the Django string substitution stuff to work.
+
+It's a real pain in the ass.
+http://vim.wikia.com/wiki/How_to_stop_auto_indenting
+
+:setlocal noautoindent
+:setlocal nocindent
+:setlocal nosmartindent
+:setlocal indentexpr=
+-->
+<script type="text/javascript" src="js/make.js"></script>
+<script type="text/javascript">
 onOpen = function() {
     console.debug('Opened socket')
     var request = new XMLHttpRequest();

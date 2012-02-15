@@ -392,8 +392,18 @@ class Worker(webapp.RequestHandler):
         channel.send_message(channel_id, simplejson.dumps(payload))
 
 class Updater(webapp.RequestHandler):
-    """Pull REDDIT_ENTRY_LIMIT entries from /r/videos into the data store."""
+    """Put an UpdateWorker on the task queue."""
     def get(self):
+        #
+        # TODO: what if somebody is reading from the data store as 
+        # we're refreshing?
+        #
+        taskqueue.add(url='/update_worker', params={})
+
+class UpdateWorker(webapp.RequestHandler):
+    """Pull REDDIT_ENTRY_LIMIT entries from /r/videos into the data store."""
+    def post(self):
+        logging.info('UpdateWorker started')
         while True:
             entries = []
             reddit_api = reddit.Reddit(user_agent=USER_AGENT)
@@ -438,19 +448,12 @@ class Updater(webapp.RequestHandler):
                         timestamp=timestamp)
             store.put()
 
-        query = RedditEntry.all()
-        query.order('rank')
-        entries = query.fetch(REDDIT_ENTRY_LIMIT)
-
-        path = os.path.join(os.path.dirname(__file__), 'update.html')
-        template_values = { 'entries' : entries }
-        self.response.out.write(template.render(path, template_values))
-
 application = webapp.WSGIApplication([
   ('/', MainPage),
   ('/make', Make),
   ('/worker', Worker),
   ('/update', Updater),
+  ('/update_worker', UpdateWorker),
   ('/opened', Opened)
 ], debug=True)
 

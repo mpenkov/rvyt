@@ -1,63 +1,129 @@
-<html>
-    <head>
-        <meta name="google-site-verification" content="Z4QNJAX48JgbeEZm4yAwC0rWyapuCHE4RDO8MaE6DGc" />
-        <link type="text/css" rel="stylesheet" href="/stylesheets/main.css" />
-    </head>
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>rvyt: Reddit Videos to YouTube Playlist</title>
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <meta name="google-site-verification" content="Z4QNJAX48JgbeEZm4yAwC0rWyapuCHE4RDO8MaE6DGc" />
+
+    <!-- Le HTML5 shim, for IE6-8 support of HTML elements -->
+    <!--[if lt IE 9]>
+      <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <!-- Le styles -->
+    <link href="css/bootstrap.css" rel="stylesheet">
+    <style>
+      body {
+        padding-top: 60px; /* 60px to make the container go all the way to the bottom of the topbar */
+      }
+    </style>
+    <link href="css/bootstrap-responsive.css" rel="stylesheet">
+
+    <!-- Le fav and touch icons -->
+    <link rel="shortcut icon" href="img/favicon.ico">
+    <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
+    <link rel="apple-touch-icon" sizes="72x72" href="img/apple-touch-icon-72x72.png">
+    <link rel="apple-touch-icon" sizes="114x114" href="img/apple-touch-icon-114x114.png">
+  </head>
+
   <body>      
-      <h1>Welcome</h1>
-     
-      <p>This Web application grabs top videos from Reddit and makes a YouTube
-      playlist that you can watch.</p>  
-      <!-- <p><a href="{{ url }}">YouTube Login</a> (optional)</p> -->
-    {% if has_credentials %}
+
+    <div class="navbar navbar-fixed-top">
+      <div class="navbar-inner">
+        <div class="container">
+          <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </a>
+          <a class="brand" href="#">rvyt</a>
+          <div class="nav-collapse">
+            <ul class="nav">
+              <li class="active"><a href="#">Home</a></li>
+              <li><a href="#about">About</a></li>
+              <li><a href="#contact">Contact</a></li>
+            </ul>
+          </div><!--/.nav-collapse -->
+        </div>
+      </div>
+    </div>
+    <div class="container">
+
+<h1>Welcome</h1>
+
+<p>This Web application grabs top videos from Reddit and makes a YouTube
+playlist that you can watch.</p>  
+<!-- <p><a href="{{ url }}">YouTube Login</a> (optional)</p> -->
+{% if has_credentials %}
     <form action="/make" method="post">
-        <table>
-            <tr>
-                <td>List title:</td>
-                <td><input type="text" name="title" value="Reddit videos"></td>
-            </tr>
-            <tr>
-                <td>List description:</td>
-                <td><input type="text" name="description" value="Made by rvyt (https://github.com/mpenkov/rvyt)" size="50"></td>
-            </tr>
-            <tr>
-                <td>Limit:</td>
-                <td>
-                    <input type="radio" name="limit" value="1" checked="true">1
-                    <input type="radio" name="limit" value="5">5
-                    <input type="radio" name="limit" value="10">10
-                    <input type="radio" name="limit" value="25">25
-                    <input type="radio" name="limit" value="50">50
-                    <input type="radio" name="limit" value="100">100
-                </td>
-            </tr>
-            <tr>
-                <td></td>
-                <td><input type="submit" value="Make playlist"></td>
-            </tr>
-        </table>
+    <table>
+        <tr>
+            <td>List title:</td>
+            <td><input type="text" name="title" value="Reddit videos"></td>
+        </tr>
+        <tr>
+            <td>List description:</td>
+            <td><input type="text" name="description" value="Made by rvyt (https://github.com/mpenkov/rvyt)" size="50"></td>
+        </tr>
+        <tr>
+            <td>Limit:</td>
+            <td>
+                <input type="radio" name="limit" value="1" checked="true">1
+                <input type="radio" name="limit" value="5">5
+                <input type="radio" name="limit" value="10">10
+                <input type="radio" name="limit" value="25">25
+                <input type="radio" name="limit" value="50">50
+                <input type="radio" name="limit" value="100">100
+            </td>
+        </tr>
+        <tr>
+            <td></td>
+            <td><input type="submit" value="Make playlist"></td>
+        </tr>
+    </table>
     </form>
     <p>After you have finished using the application, click 
     <a href="https://www.google.com/accounts/b/0/IssuedAuthSubTokens">here</a> 
     to revoke the granted credentials.</p>
 
-    {% else %}
+{% else %}
     <p>This application requires permission to access your YouTube account.
     Click <a href="{{ url }}">here</a> to grant this permission.  You can 
     <a href="https://www.google.com/accounts/b/0/IssuedAuthSubTokens">revoke</a> 
     this permission at any time.</p>
-    {% endif %}
+{% endif %}
 
-    <h2>Problems, comments or suggestions?</h2>
-    
-    <p>Please let me know about them: misha [dot] penkov [at] gmail [dot] com</p>
+<h2>Problems, comments or suggestions?</h2>
 
-    <p>The local cache of the /r/videos subreddit was last updated at 
-    {{last_update}}.</p>
+<p>Please let me know about them: misha [dot] penkov [at] gmail [dot] com</p>
 
-    <p>[ <a href="http://www.reddit.com/r/videos">reddit</a> | 
-    <a href="http://www.youtube.com">youtube</a> |
-    <a href="https://github.com/mpenkov/rvyt">rvyt@github</a> ]</p>
+<p>The local cache of the /r/videos subreddit was last updated at 
+{{last_update}}.</p>
+
+<p>[ <a href="http://www.reddit.com/r/videos">reddit</a> | 
+<a href="http://www.youtube.com">youtube</a> |
+<a href="https://github.com/mpenkov/rvyt">rvyt@github</a> ]</p>
+
+    </div> <!-- /container -->
+
+    <!-- Le javascript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script src="js/jquery.js"></script>
+    <script src="js/bootstrap-transition.js"></script>
+    <script src="js/bootstrap-alert.js"></script>
+    <script src="js/bootstrap-modal.js"></script>
+    <script src="js/bootstrap-dropdown.js"></script>
+    <script src="js/bootstrap-scrollspy.js"></script>
+    <script src="js/bootstrap-tab.js"></script>
+    <script src="js/bootstrap-tooltip.js"></script>
+    <script src="js/bootstrap-popover.js"></script>
+    <script src="js/bootstrap-button.js"></script>
+    <script src="js/bootstrap-collapse.js"></script>
+    <script src="js/bootstrap-carousel.js"></script>
+    <script src="js/bootstrap-typeahead.js"></script>
 
   </body>
 </html>

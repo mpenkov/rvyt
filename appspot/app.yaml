@@ -10,8 +10,14 @@ handlers:
   static_dir: js
 - url: /img
   static_dir: img
+- url: /html
+  static_dir: html
 - url: /oauth2callback
   script: oauth2client/appengine.py
+- url: /admin/.*
+  script: admin.py
+  login: admin
+  auth_fail_action: unauthorized
 
 - url: /.*
   script: main.py

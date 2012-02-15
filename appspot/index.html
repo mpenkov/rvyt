@@ -13,19 +13,21 @@
     <![endif]-->
 
     <!-- Le styles -->
-    <link href="css/bootstrap.css" rel="stylesheet">
+    <link href="/css/bootstrap.css" rel="stylesheet">
     <style>
       body {
         padding-top: 60px; /* 60px to make the container go all the way to the bottom of the topbar */
       }
     </style>
-    <link href="css/bootstrap-responsive.css" rel="stylesheet">
+    <link href="/css/bootstrap-responsive.css" rel="stylesheet">
 
     <!-- Le fav and touch icons -->
-    <link rel="shortcut icon" href="img/favicon.ico">
-    <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
-    <link rel="apple-touch-icon" sizes="72x72" href="img/apple-touch-icon-72x72.png">
-    <link rel="apple-touch-icon" sizes="114x114" href="img/apple-touch-icon-114x114.png">
+    <!--
+    <link rel="shortcut icon" href="/img/favicon.ico">
+    <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
+    <link rel="apple-touch-icon" sizes="72x72" href="/img/apple-touch-icon-72x72.png">
+    <link rel="apple-touch-icon" sizes="114x114" href="/img/apple-touch-icon-114x114.png">
+    -->
   </head>
 
   <body>      
@@ -38,26 +40,28 @@
             <span class="icon-bar"></span>
             <span class="icon-bar"></span>
           </a>
-          <a class="brand" href="#">rvyt</a>
+          <a class="brand" href="/">rvyt</a>
           <div class="nav-collapse">
             <ul class="nav">
-              <li class="active"><a href="#">Home</a></li>
-              <li><a href="#about">About</a></li>
-              <li><a href="#contact">Contact</a></li>
+              <li class="active"><a href="/">Home</a></li>
+              <li><a href="/html/about.html">About</a></li>
+              <li><a href="/html/contact.html">Contact</a></li>
             </ul>
           </div><!--/.nav-collapse -->
         </div>
       </div>
     </div>
     <div class="container">
+        <div class="span6">
 
 <h1>Welcome</h1>
 
-<p>This Web application grabs top videos from Reddit and makes a YouTube
-playlist that you can watch.</p>  
-<!-- <p><a href="{{ url }}">YouTube Login</a> (optional)</p> -->
+<p>This Web application grabs top videos from 
+<a href="http://www.reddit.com/r/videos">Reddit</a> and makes a 
+<a href="http://www.youtube.com">YouTube</a> playlist.  
+
 {% if has_credentials %}
-    <form action="/make" method="post">
+    <form action="/save_playlist" method="post">
     <table>
         <tr>
             <td>List title:</td>
@@ -70,9 +74,9 @@ playlist that you can watch.</p>
         <tr>
             <td>Limit:</td>
             <td>
-                <input type="radio" name="limit" value="1" checked="true">1
+                <!-- <input type="radio" name="limit" value="1" checked="true">1 -->
                 <input type="radio" name="limit" value="5">5
-                <input type="radio" name="limit" value="10">10
+                <input type="radio" name="limit" value="10" checked="true">10
                 <input type="radio" name="limit" value="25">25
                 <input type="radio" name="limit" value="50">50
                 <input type="radio" name="limit" value="100">100
@@ -95,22 +99,17 @@ playlist that you can watch.</p>
     this permission at any time.</p>
 {% endif %}
 
-<h2>Problems, comments or suggestions?</h2>
+<p><small>The local cache of the /r/videos subreddit was last updated at 
+    {{last_update}}.</small></p>
 
-<p>Please let me know about them: misha [dot] penkov [at] gmail [dot] com</p>
-
-<p>The local cache of the /r/videos subreddit was last updated at 
-{{last_update}}.</p>
-
-<p>[ <a href="http://www.reddit.com/r/videos">reddit</a> | 
-<a href="http://www.youtube.com">youtube</a> |
-<a href="https://github.com/mpenkov/rvyt">rvyt@github</a> ]</p>
-
+        </div> <!-- /span -->
     </div> <!-- /container -->
 
     <!-- Le javascript
     ================================================== -->
     <!-- Placed at the end of the document so the pages load faster -->
+
+    <!-- 
     <script src="js/jquery.js"></script>
     <script src="js/bootstrap-transition.js"></script>
     <script src="js/bootstrap-alert.js"></script>
@@ -124,6 +123,7 @@ playlist that you can watch.</p>
     <script src="js/bootstrap-collapse.js"></script>
     <script src="js/bootstrap-carousel.js"></script>
     <script src="js/bootstrap-typeahead.js"></script>
+    -->
 
   </body>
 </html>

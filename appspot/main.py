@@ -12,13 +12,11 @@ import logging
 import pickle
 import random
 import urllib
-import urllib2
 import urlparse
 import time
 import wsgiref.handlers
 import simplejson
-
-import reddit
+from xml.dom.minidom import parseString
 
 from google.appengine.api import channel
 from google.appengine.api import taskqueue
@@ -62,33 +60,20 @@ href="https://code.google.com/apis/console">APIs Console</a>.
 </p>
 """ % CLIENT_SECRETS
 
-#
-# TODO: <shameless_copy_paste>
-#
-
-USER_AGENT = 'http://rvytpl.appspot.com'
+from admin import USER_AGENT, REDDIT_ENTRY_LIMIT, RedditEntry, UpdateTimestamp
 YOUTUBE_DEVELOPER_KEY = 'AI39si4TTIXb-M4G0rhm4kG1eYowjK2tlHZlrxGS4vOegXEK0oS3LRrmx-PMbrMRVtfHqpJ6gG60qQ2U4w6X_DnqfmkuqtTDvA'
 
 OAUTH_METHOD = gdata.oauth.OAuthSignatureMethod_HMAC_SHA1
 GDATA_URL = 'http://gdata.youtube.com', 
+
+PLAYLIST_URI = 'http://gdata.youtube.com/feeds/api/playlists/'
+PLAYLIST_URL = 'http://www.youtube.com/playlist?list='
 
 http = httplib2.Http(memcache)
 decorator = oauth2decorator_from_clientsecrets(
     CLIENT_SECRETS,
     'http://gdata.youtube.com',
     MISSING_CLIENT_SECRETS_MESSAGE)
-
-"""Fetch and keep this many entries from the subreddit."""
-REDDIT_ENTRY_LIMIT = 100
-
-class RedditEntry(db.Model):
-    """An entity to hold information about a single Reddit entry."""
-    rank = db.IntegerProperty(required=True)
-    title = db.StringProperty(required=True)
-    url = db.StringProperty(required=True)
-    permalink = db.StringProperty(required=True)
-    score = db.IntegerProperty(required=True)
-    timestamp = db.DateTimeProperty(required=True)
 
 class MyOAuthToken(OAuthToken):
     """This is a an ugly hack to make the old 1.0 API work with OAuth2."""
@@ -186,11 +171,7 @@ def get_playlist_id_from_title(youtube_api, title):
             return pl.id.text
     return None
 
-#
-# TODO: </shameless_copy_paste>
-#
-
-class MainPage(webapp.RequestHandler):
+class MainPageHandler(webapp.RequestHandler):
     """
     The index page.  This is what people see when they first come to 
     the site.
@@ -199,30 +180,39 @@ class MainPage(webapp.RequestHandler):
     def get(self):
         has_credentials = False
         if decorator.has_credentials():
-            if decorator.credentials.access_token_expired:
-                #
-                # FIXME: this doesn't seem to work, at least locally.
-                #
-                decorator.credentials.authorize(http)
-            #
-            # checking has_credentials() isn't enough for YouTube.
-            # we need to make sure that an API call actually works.
-            #
-            token = credentials_to_oauth_token(decorator.credentials)
-            yt_service = youtube_login(token)
             try:
+                user = users.get_current_user()
+                logging.info('current user: %s' % user.nickname())
+                if decorator.credentials.access_token_expired:
+                    #
+                    # TODO: I'm not sure why I have to call a private method
+                    # to do this, but it seems to do the trick.
+                    #
+                    decorator.credentials._refresh(http.request)
                 #
-                # This is just a call to see if the YouTube Service is working 
-                # correctly.  If this fails, then our token is bad.
+                # checking has_credentials() isn't enough for YouTube.
+                # we need to make sure that an API call actually works.
+                #
+                token = credentials_to_oauth_token(decorator.credentials)
+                yt_service = youtube_login(token)
+
+                #
+                # This is to see if the YouTube Service is working correctly.
+                # If this fails, then our token is bad.
                 #
                 playlist_feed = yt_service.GetYouTubePlaylistFeed()
                 has_credentials = True
-            except gdata.service.RequestError, re:
-                logging.error('gdata.service.RequestError: ' + str(re))
+            except gdata.service.Error, err:
+                logging.error('gdata.service.RequestError: ' + str(err))
+            except AccessTokenRefreshError, atre:
+                logging.error('AccessTokenRefreshError:' + str(atre))
+        else:
+            logging.info('current user: guest')
 
-        query = RedditEntry.all()
-        for entry in query.fetch(1):
-            last_update = entry.timestamp
+        query = UpdateTimestamp.all()
+        last_update = datetime.datetime.min.isoformat()
+        for uts in query.fetch(1):
+            last_update = uts.timestamp.isoformat()
         variables = {
                 'url': decorator.authorize_url(),
                 'has_credentials': has_credentials,
@@ -231,12 +221,6 @@ class MainPage(webapp.RequestHandler):
         path = os.path.join(os.path.dirname(__file__), 'index.html')
         self.response.out.write(template.render(path, variables))
 
-PLAYLIST_URI = 'http://gdata.youtube.com/feeds/api/playlists/'
-PLAYLIST_URL = 'http://www.youtube.com/playlist?list='
-
-QUOTA = "<?xml version='1.0' encoding='UTF-8'?><errors><error><domain>yt:quota</domain><code>too_many_recent_calls</code></error></errors>"
-
-from xml.dom.minidom import parseString
 def parse_request_error(err):
     body = err[0]['body']
     if body.startswith("<?xml version='1.0' encoding='UTF-8'?>"):
@@ -245,7 +229,7 @@ def parse_request_error(err):
     else:
         return body
 
-class Make(webapp.RequestHandler):
+class SavePlaylistHandler(webapp.RequestHandler):
     @decorator.oauth_required
     def post(self):
         if decorator.credentials.access_token_expired:
@@ -297,10 +281,10 @@ class Make(webapp.RequestHandler):
                     'token' : '', 
                     'error' : parse_request_error(err) }
 
-        path = os.path.join(os.path.dirname(__file__), 'make.html')
+        path = os.path.join(os.path.dirname(__file__), 'save_playlist.html')
         self.response.out.write(template.render(path, template_values))
 
-class Opened(webapp.RequestHandler):
+class ChannelOpenedHandler(webapp.RequestHandler):
     """
     This page gets posted to when a channel has been opened.  This means its
     OK to start a worker to communicate with that channel.  This class puts
@@ -329,9 +313,9 @@ class Opened(webapp.RequestHandler):
                     'permalink' : v.permalink,
                     'token' : str(pickle.dumps(token))
                 }
-            taskqueue.add(url='/worker', params=params)
+            taskqueue.add(url='/spl_task', params=params)
         
-class Worker(webapp.RequestHandler):
+class SavePlaylistTask(webapp.RequestHandler):
     """
     This is a task that gets put on the task queue by the Opened class.
     It performs the addition of a single video to some playlist.
@@ -353,7 +337,7 @@ class Worker(webapp.RequestHandler):
         token_str = str(self.request.get('token'))
         token = pickle.loads(token_str)
 
-        delay = 0.01
+        delay = 0.10
         payload = { 'url' : url } 
         video_id = get_video_id_from_url(url)
         if not video_id:
@@ -366,7 +350,9 @@ class Worker(webapp.RequestHandler):
                 # trying again.  The wait delay is doubled each time.  Give up
                 # when the delay reaches 1 minute.
                 #
-                while delay < 60:
+                while True:
+                    if delay > 60:
+                        raise gdata.service.Error, 'exceeded max delay'
                     try:
                         plve = youtube_api.AddPlaylistVideoEntryToPlaylist(
                             plist_uri, video_id, title, permalink)
@@ -376,13 +362,13 @@ class Worker(webapp.RequestHandler):
                             raise gdata.service.Error, 'bad instance'
                         break
                     except gdata.service.Error, err:
-                        logging.error('gdata.service.Error' + str(err))
                         code = parse_request_error(err)
                         if code == 'too_many_recent_calls':
                             delay = delay*2
                             time.sleep(delay)
                             continue
                         else:
+                            logging.error('gdata.service.Error' + str(err))
                             payload['error'] = code
                             break
             except gdata.service.Error, err:
@@ -391,76 +377,15 @@ class Worker(webapp.RequestHandler):
 
         channel.send_message(channel_id, simplejson.dumps(payload))
 
-class Updater(webapp.RequestHandler):
-    """Put an UpdateWorker on the task queue."""
-    def get(self):
-        #
-        # TODO: what if somebody is reading from the data store as 
-        # we're refreshing?
-        #
-        taskqueue.add(url='/update_worker', params={})
-
-class UpdateWorker(webapp.RequestHandler):
-    """Pull REDDIT_ENTRY_LIMIT entries from /r/videos into the data store."""
-    def post(self):
-        logging.info('UpdateWorker started')
-        while True:
-            entries = []
-            reddit_api = reddit.Reddit(user_agent=USER_AGENT)
-            subreddit = reddit_api.get_subreddit('videos').get_top(
-                    limit=REDDIT_ENTRY_LIMIT)
-            #
-            # This sleep is here to prevent the below HTTP error.
-            # It seems to help.
-            #
-            delay = 0.125
-            try:
-                for rank in range(REDDIT_ENTRY_LIMIT):
-                    try:
-                        entry = subreddit.next()
-                        timestamp = datetime.datetime.now()
-                        entries.append((rank,entry,timestamp))
-                        logging.info('fetched entry %d' % rank)
-                    except KeyError, ke:
-                        #
-                        # Not sure why this happens.  Seems to be an API bug.
-                        #
-                        logging.error(ke)
-                        continue
-                break
-            except urllib2.HTTPError, err:
-                logging.error(str(err) + ' current delay: %.4fs' % delay)
-                delay = min(delay*2, 60)
-                time.sleep(delay)
-                continue
-
-        query = RedditEntry.all()
-        for entry in query.fetch(REDDIT_ENTRY_LIMIT):
-            entry.delete()
-
-        for rank,entry,timestamp in entries:
-            store = RedditEntry(
-                        rank=rank,
-                        title=entry.title.replace('\n', ' '),
-                        url=entry.url,
-                        permalink=entry.permalink,
-                        score=entry.score,
-                        timestamp=timestamp)
-            store.put()
-
 application = webapp.WSGIApplication([
-  ('/', MainPage),
-  ('/make', Make),
-  ('/worker', Worker),
-  ('/update', Updater),
-  ('/update_worker', UpdateWorker),
-  ('/opened', Opened)
+    ('/', MainPageHandler),
+    ('/save_playlist', SavePlaylistHandler),
+    ('/spl_task', SavePlaylistTask),
+    ('/opened', ChannelOpenedHandler)
 ], debug=True)
-
 
 def main():
   run_wsgi_app(application)
-
 
 if __name__ == '__main__':
   main()

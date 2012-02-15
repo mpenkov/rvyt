@@ -394,43 +394,49 @@ class Worker(webapp.RequestHandler):
 class Updater(webapp.RequestHandler):
     """Pull REDDIT_ENTRY_LIMIT entries from /r/videos into the data store."""
     def get(self):
+        while True:
+            entries = []
+            reddit_api = reddit.Reddit(user_agent=USER_AGENT)
+            subreddit = reddit_api.get_subreddit('videos').get_top(
+                    limit=REDDIT_ENTRY_LIMIT)
+            #
+            # This sleep is here to prevent the below HTTP error.
+            # It seems to help.
+            #
+            delay = 0.125
+            try:
+                for rank in range(REDDIT_ENTRY_LIMIT):
+                    try:
+                        entry = subreddit.next()
+                        timestamp = datetime.datetime.now()
+                        entries.append((rank,entry,timestamp))
+                        logging.info('fetched entry %d' % rank)
+                    except KeyError, ke:
+                        #
+                        # Not sure why this happens.  Seems to be an API bug.
+                        #
+                        logging.error(ke)
+                        continue
+                break
+            except urllib2.HTTPError, err:
+                logging.error(str(err) + ' current delay: %.4fs' % delay)
+                delay = min(delay*2, 60)
+                time.sleep(delay)
+                continue
+
         query = RedditEntry.all()
         for entry in query.fetch(REDDIT_ENTRY_LIMIT):
             entry.delete()
 
-        reddit_api = reddit.Reddit(user_agent=USER_AGENT)
-        subreddit = reddit_api.get_subreddit('videos').get_top(
-                limit=REDDIT_ENTRY_LIMIT)
-        rank = 1
-        while True:
-            try:                
-                entry = subreddit.next()
-                timestamp = datetime.datetime.now()
-                store = RedditEntry(
+        for rank,entry,timestamp in entries:
+            store = RedditEntry(
                         rank=rank,
                         title=entry.title.replace('\n', ' '),
                         url=entry.url,
                         permalink=entry.permalink,
                         score=entry.score,
                         timestamp=timestamp)
-                store.put()
-                #
-                # This sleep is here to prevent the below HTTP error.
-                # It seems to help.
-                #
-                time.sleep(0.25)
-                rank += 1
-            except urllib2.HTTPError, err:
-                logging.error(err)
-                break
-            except ValueError, err:
-                logging.error(err)
-                break
-            except StopIteration:
-                logging.info('caught StopIteration')
-                break
-
-        logging.info('read %d entries' % (rank-1))
+            store.put()
 
         query = RedditEntry.all()
         query.order('rank')

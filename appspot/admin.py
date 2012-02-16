@@ -20,15 +20,12 @@ REDDIT_BATCH_SIZE = 25
 
 class RedditEntry(db.Model):
     """An entity to hold information about a single Reddit entry."""
-    rank = db.IntegerProperty(required=True)
-    title = db.StringProperty(required=True)
-    url = db.StringProperty(required=True)
-    permalink = db.StringProperty(required=True)
-    score = db.IntegerProperty(required=True)
-
-class UpdateTimestamp(db.Model):
-    """An entity to hold information about when we last updated."""
-    timestamp = db.DateTimeProperty(required=True)
+    rank = db.IntegerProperty()
+    title = db.StringProperty()
+    url = db.StringProperty()
+    permalink = db.StringProperty()
+    score = db.IntegerProperty()
+    timestamp = db.DateTimeProperty()
 
 class UpdateHandler(webapp.RequestHandler):
     """Put an UpdateTask on the task queue."""
@@ -50,43 +47,52 @@ class UpdateTask(webapp.RequestHandler):
 
         new_entries = { }
         for rank in range(REDDIT_ENTRY_LIMIT):
+            # 
+            # Sleep every 25 entries to increase the gap between Reddit API
+            # calls (it fetches entries in batches of 25).
+            #
+            # subreddit.next() throws exceptions occasionally.  Most often, it's
+            # a HTTP Error 429 (Unknown).  Rather than deal with it explicitly,
+            # let the current update task fail.  It will be rescheduled
+            # automatically by GAE.
+            #
             if rank and (rank % REDDIT_BATCH_SIZE == 0):
+                logging.info('Fetched %d entries, sleeping' % rank)
                 time.sleep(60)
             entry = subreddit.next()
-            new_entries[entry.url] = (rank, entry)
-            logging.info('fetched entry %d' % rank)
+            new_entries[entry.id] = (rank, entry)
 
-        query = RedditEntry.all()
-        old_entries = query.fetch(REDDIT_ENTRY_LIMIT)
-
-        to_update = { }
-        for oe in old_entries:
-            if oe.url not in new_entries:
-                logging.info('deleting old entry %s' % oe.url)
-                oe.delete()
-            else:
-                to_update[oe.url] = oe
-
-        for entry_url, (rank,entry) in new_entries.items():
-            try:
-                store = to_update[entry_url]
+        #
+        # Update/add entries to the data store.
+        #
+        timestamp = datetime.datetime.now()
+        for entry_id, (rank,entry) in new_entries.items():
+            entry_key = db.Key.from_path('RedditEntry', entry_id)
+            store = db.get(entry_key)
+            if store:
                 store.rank = rank
                 store.score = entry.score
-            except KeyError:
-                logging.info('adding new entry %s' % entry.url)
+                store.timestamp = timestamp
+            else:
                 store = RedditEntry(
+                            key_name=entry.id,
                             rank=rank,
                             title=entry.title.replace('\n', ' '),
                             url=entry.url,
                             permalink=entry.permalink,
-                            score=entry.score)
+                            score=entry.score,
+                            timestamp = timestamp)
+                logging.info('adding new entry %s' % entry.url)
             store.put()
 
-        query = UpdateTimestamp.all()
-        for uts in query.fetch(1):
-            uts.delete()
-        uts = UpdateTimestamp(timestamp=datetime.datetime.now())
-        uts.put()
+        #
+        # Delete stale entries.
+        #
+        query = RedditEntry.all()
+        query.filter('timestamp <', timestamp)
+        to_delete = [ x for x in query ]
+        logging.info('deleting %d entries' % len(to_delete))
+        db.delete(to_delete)
 
 application = webapp.WSGIApplication([
     ('/admin/update', UpdateHandler),

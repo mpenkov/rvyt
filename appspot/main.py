@@ -60,7 +60,7 @@ href="https://code.google.com/apis/console">APIs Console</a>.
 </p>
 """ % CLIENT_SECRETS
 
-from admin import USER_AGENT, REDDIT_ENTRY_LIMIT, RedditEntry, UpdateTimestamp
+from admin import USER_AGENT, REDDIT_ENTRY_LIMIT, RedditEntry
 YOUTUBE_DEVELOPER_KEY = 'AI39si4TTIXb-M4G0rhm4kG1eYowjK2tlHZlrxGS4vOegXEK0oS3LRrmx-PMbrMRVtfHqpJ6gG60qQ2U4w6X_DnqfmkuqtTDvA'
 
 OAUTH_METHOD = gdata.oauth.OAuthSignatureMethod_HMAC_SHA1
@@ -209,10 +209,10 @@ class MainPageHandler(webapp.RequestHandler):
         else:
             logging.info('current user: guest')
 
-        query = UpdateTimestamp.all()
         last_update = datetime.datetime.min.isoformat()
-        for uts in query.fetch(1):
-            last_update = uts.timestamp.isoformat()
+        entry = RedditEntry.all().get()
+        if entry:
+            last_update = entry.timestamp
         variables = {
                 'url': decorator.authorize_url(),
                 'has_credentials': has_credentials,

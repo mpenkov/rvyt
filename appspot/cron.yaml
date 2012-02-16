@@ -1,0 +1,4 @@
+cron:
+- description: update of local reddit cache
+  url: /admin/update
+  schedule: every 30 mins

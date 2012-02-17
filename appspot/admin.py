@@ -7,16 +7,14 @@ import logging
 import datetime
 import time
 import urllib2
-
-import reddit
+import simplejson
 
 USER_AGENT = 'http://rvytpl.appspot.com'
 
 """Fetch and keep this many entries from the subreddit."""
 REDDIT_ENTRY_LIMIT = 100
 
-"""Sleep after fetching this many entries."""
-REDDIT_BATCH_SIZE = 25
+RVIDEOS_URL = 'http://www.reddit.com/r/videos.json'
 
 class RedditEntry(db.Model):
     """An entity to hold information about a single Reddit entry."""
@@ -41,48 +39,53 @@ class UpdateTask(webapp.RequestHandler):
     """Pull REDDIT_ENTRY_LIMIT entries from /r/videos into the data store."""
     def post(self):
         logging.info('UpdateTask started')
-        reddit_api = reddit.Reddit(user_agent=USER_AGENT)
-        subreddit = reddit_api.get_subreddit('videos').get_top(
-                limit=REDDIT_ENTRY_LIMIT)
 
-        new_entries = { }
-        for rank in range(REDDIT_ENTRY_LIMIT):
-            # 
-            # Sleep every 25 entries to increase the gap between Reddit API
-            # calls (it fetches entries in batches of 25).
+        after = None
+        headers = { 'User-Agent' : USER_AGENT }
+        new_entries = []
+        while len(new_entries) < REDDIT_ENTRY_LIMIT:
+            try:
+                url = RVIDEOS_URL
+                if after:
+                    url += '?after=' + after
+                request = urllib2.Request(url, headers=headers)
+                json = simplejson.load(urllib2.urlopen(request))
+                new_entries += [ foo['data'] 
+                        for foo in json['data']['children'] ]
+                after = json['data']['after']
+            except urllib2.HTTPError, err:
+                logging.error(err)
+
             #
-            # subreddit.next() throws exceptions occasionally.  Most often, it's
-            # a HTTP Error 429 (Unknown).  Rather than deal with it explicitly,
-            # let the current update task fail.  It will be rescheduled
-            # automatically by GAE.
+            # TODO:
+            # Ideally, we'd defer to another task on the queue, but it's simpler
+            # to do this for now.
             #
-            if rank and (rank % REDDIT_BATCH_SIZE == 0):
-                logging.info('Fetched %d entries, sleeping' % rank)
-                time.sleep(60)
-            entry = subreddit.next()
-            new_entries[entry.id] = (rank, entry)
+            time.sleep(2)
 
         #
         # Update/add entries to the data store.
         #
         timestamp = datetime.datetime.now()
-        for entry_id, (rank,entry) in new_entries.items():
-            entry_key = db.Key.from_path('RedditEntry', entry_id)
+        for rank, entry in enumerate(new_entries):
+            entry_key = db.Key.from_path('RedditEntry', entry['id'])
             store = db.get(entry_key)
+
             if store:
                 store.rank = rank
-                store.score = entry.score
+                store.score = entry['score']
                 store.timestamp = timestamp
+                logging.info('updating entry %s' % entry['url'])
             else:
                 store = RedditEntry(
-                            key_name=entry.id,
+                            key_name=entry['id'],
                             rank=rank,
-                            title=entry.title.replace('\n', ' '),
-                            url=entry.url,
-                            permalink=entry.permalink,
-                            score=entry.score,
+                            title=entry['title'].replace('\n', ' '),
+                            url=entry['url'],
+                            permalink=entry['permalink'],
+                            score=entry['score'],
                             timestamp = timestamp)
-                logging.info('adding new entry %s' % entry.url)
+                logging.info('adding new entry %s' % entry['url'])
             store.put()
 
         #

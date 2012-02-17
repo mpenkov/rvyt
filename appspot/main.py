@@ -75,6 +75,8 @@ decorator = oauth2decorator_from_clientsecrets(
     'http://gdata.youtube.com',
     MISSING_CLIENT_SECRETS_MESSAGE)
 
+DATETIME_FORMAT = '%H:%M %d/%m/%Y GMT'
+
 class MyOAuthToken(OAuthToken):
     """This is a an ugly hack to make the old 1.0 API work with OAuth2."""
     def __init__(self, *args):
@@ -129,7 +131,7 @@ def strip_tags(html):
     s.feed(html)
     return s.get_data()
 
-def get_video_id_from_url(url):
+def vid_from_url(url):
     """
     If the specified URL is a YouTube video, returns the video ID.
     Otherwise, returns None.
@@ -160,7 +162,7 @@ def get_video_id_from_url(url):
     else:
         return None
 
-def get_playlist_id_from_title(youtube_api, title):
+def plist_id_from_title(youtube_api, title):
     """
     Returns the ID of the playlist with the specified title if it exists, or
     None.
@@ -171,11 +173,50 @@ def get_playlist_id_from_title(youtube_api, title):
             return pl.id.text
     return None
 
+SHORT_TITLE_LEN = 30
+
+class WelcomeHandler(webapp.RequestHandler):
+    def get(self):
+        query = RedditEntry.all()
+        query.order('rank')
+        entries = query.fetch(limit=REDDIT_ENTRY_LIMIT)
+        video_ids = filter(lambda f: f, [ vid_from_url(e.url) for e in entries ])
+        playlist = ','.join(video_ids[1:])
+        last_update = entries[0].timestamp.strftime(DATETIME_FORMAT)
+        all_entries = {}
+        current_index = 0
+        for e in entries:
+            vid = vid_from_url(e.url)
+            elem = { 
+                    'permalink' : e.permalink, 
+                    'score' : e.score,
+                    'title' : e.title,
+                    'rank' : e.rank,
+                    'url' : e.url,
+                    'rank' : e.rank,
+                    'index' : current_index }
+            if vid:
+                current_index += 1
+            if len(e.title) < SHORT_TITLE_LEN:
+                elem['short'] = e.title
+            else:
+                elem['short'] = e.title[:SHORT_TITLE_LEN] + '...'
+            all_entries[vid] = elem
+        top25_list = [ ]
+        for i in range(25):
+            entry = all_entries[video_ids[i]]
+            top25_list.append(
+"""<li>
+[ %(score)s ] 
+<a href="javascript:ytplayer.playVideoAt(%(index)s);">%(short)s</a></li>""" % entry)
+        variables = { 'first' : video_ids[0], 'playlist' : playlist, 
+                'last_update' : last_update, 
+                'all_entries' : simplejson.dumps(all_entries),
+                'top25_list' : '\n'.join(top25_list) }
+        path = os.path.join(os.path.dirname(__file__), 'welcome.html')
+        self.response.out.write(template.render(path, variables))
+
 class MainPageHandler(webapp.RequestHandler):
-    """
-    The index page.  This is what people see when they first come to 
-    the site.
-    """
     @decorator.oauth_aware
     def get(self):
         has_credentials = False
@@ -209,16 +250,12 @@ class MainPageHandler(webapp.RequestHandler):
         else:
             logging.info('current user: guest')
 
-        last_update = datetime.datetime.min.isoformat()
         entry = RedditEntry.all().get()
-        if entry:
-            last_update = entry.timestamp
         variables = {
                 'url': decorator.authorize_url(),
-                'has_credentials': has_credentials,
-                'last_update' : last_update
+                'has_credentials': has_credentials
             }
-        path = os.path.join(os.path.dirname(__file__), 'index.html')
+        path = os.path.join(os.path.dirname(__file__), 'start.html')
         self.response.out.write(template.render(path, variables))
 
 def parse_request_error(err):
@@ -248,7 +285,7 @@ class SavePlaylistHandler(webapp.RequestHandler):
         try:
             youtube_api = youtube_login(token)
 
-            playlist_id = get_playlist_id_from_title(youtube_api, title)
+            playlist_id = plist_id_from_title(youtube_api, title)
             if playlist_id:
                 #
                 # Dammit YouTube API, why do you have to be so inconsistent?
@@ -339,7 +376,7 @@ class SavePlaylistTask(webapp.RequestHandler):
 
         delay = 0.10
         payload = { 'url' : url } 
-        video_id = get_video_id_from_url(url)
+        video_id = vid_from_url(url)
         if not video_id:
             payload['error'] = 'skipped'
         else:
@@ -378,7 +415,8 @@ class SavePlaylistTask(webapp.RequestHandler):
         channel.send_message(channel_id, simplejson.dumps(payload))
 
 application = webapp.WSGIApplication([
-    ('/', MainPageHandler),
+    ('/', WelcomeHandler),
+    ('/start', MainPageHandler),
     ('/save_playlist', SavePlaylistHandler),
     ('/spl_task', SavePlaylistTask),
     ('/opened', ChannelOpenedHandler)

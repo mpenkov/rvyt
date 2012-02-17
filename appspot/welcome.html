@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>rvyt: Reddit Videos to YouTube Playlist</title>
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <meta name="google-site-verification" content="Z4QNJAX48JgbeEZm4yAwC0rWyapuCHE4RDO8MaE6DGc" />
+
+    <!-- Le HTML5 shim, for IE6-8 support of HTML elements -->
+    <!--[if lt IE 9]>
+      <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <!-- Le styles -->
+    <link href="/css/bootstrap.css" rel="stylesheet">
+    <style>
+      body {
+        padding-top: 60px; /* 60px to make the container go all the way to the bottom of the topbar */
+      }
+    </style>
+    <link href="/css/bootstrap-responsive.css" rel="stylesheet">
+
+    <!-- Le fav and touch icons -->
+    <!--
+    <link rel="shortcut icon" href="/img/favicon.ico">
+    <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
+    <link rel="apple-touch-icon" sizes="72x72" href="/img/apple-touch-icon-72x72.png">
+    <link rel="apple-touch-icon" sizes="114x114" href="/img/apple-touch-icon-114x114.png">
+    -->
+  </head>
+
+  <body>      
+
+    <div class="navbar navbar-fixed-top">
+      <div class="navbar-inner">
+        <div class="container">
+          <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </a>
+          <a class="brand" href="/">rvyt</a>
+          <div class="nav-collapse">
+            <ul class="nav">
+              <li class="active"><a href="/">Home</a></li>
+              <li><a href="/html/about.html">About</a></li>
+              <li><a href="/html/contact.html">Contact</a></li>
+            </ul>
+          </div><!--/.nav-collapse -->
+        </div>
+      </div>
+    </div>
+
+    <div class="container-fluid">
+        <div class="hero-unit">
+            <h1>/r/videos Top 100 Playlist</h1>
+
+            <h2 id="now_playing"><span id="score"></span></h2>
+
+<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/swfobject/2.2/swfobject.js"></script>    
+<div id="ytapiplayer">
+    You need Flash player 8+ and JavaScript enabled to view this video.
+</div>
+<script type="text/javascript">
+    var params = { allowScriptAccess: "always", allowFullScreen: "true" };
+    var atts = { id: "myytplayer" };
+    swfobject.embedSWF("http://www.youtube.com/v/{{first}}?enablejsapi=1&playerapiid=ytplayer&version=3&playlist={{playlist}}",
+                       "ytapiplayer", "640", "360", "8", null, null, params, atts);
+</script>
+
+        </div>
+
+        <div class="row-fluid">
+            <div class="span3">
+              <h2>Current Top 25</h2>
+              <ol>
+                {{ top25_list }}
+              </ol>
+              <p><small>Last updated {{last_update}}</small></p>
+              <p><a class="btn" href="http://www.reddit.com/r/videos">View all videos &raquo;</a></p>
+            </div><!--/span-->
+            <div class="span3">
+              <h2>Top Comments</h2>
+              <ol id="top_comments"><li>TODO</li></ol>
+              <p><a class="btn" id="view_comments" href="">View all comments &raquo;</a></p>
+            </div><!--/span-->
+            <div class="span3">
+              <h2>Save to YouTube</h2>
+
+                <p>You can also save this playlist to <a href="http://www.youtube.com">YouTube</a>, so
+                that you can manipulate it like 
+                <a href="http://www.youtube.com/playlist?list=9A83A476899B88A6">any regular playlist</a>:</p>
+
+                <ul>
+                    <li>re-order videos</li>
+                    <li>remove videos you don't want to watch or have already seen</a></li>
+                    <li>share your playlist with others</li>
+                    <li>...</li>
+                </ul>
+
+                <p>This feature requires permission to access your YouTube account (click 
+                <a href="/html/faq.html">here</a> to find out more).</p>
+                <a class="btn" href="/start">Save playlist to YouTube &raquo;</a>
+              <p>
+            </div><!--/span-->
+          </div><!--/row-->
+        </div><!--/span-->
+      </div><!--/row-->
+    </div> <!-- /container -->
+
+    <!--
+<div class="span8">
+
+<h2>Welcome</h2>
+
+<p>This Web application grabs top videos from 
+<a href="http://www.reddit.com/r/videos">Reddit</a> and makes a playlist than
+you can watch without having to touch the keyboard or mouse.  It can be
+convenient if you're in the mood for some entertainment, but don't feel like
+clicking on each individual video to start playing it.</p>
+
+-->
+
+</div> <!-- /span -->
+
+<script src="/js/make.js"></script>
+<script type="text/javascript">
+var ytplayer;
+function onYouTubePlayerReady(playerId) {
+    ytplayer = document.getElementById("myytplayer");
+    ytplayer.addEventListener("onStateChange", "onPlayerStateChange");
+}
+
+var nowPlaying = document.getElementById("now_playing");
+var viewComments = document.getElementById("view_comments");
+var score = document.getElementById("score");
+var allEntries = {{all_entries}};
+updateNowPlaying('{{first}}');
+
+function updateNowPlaying(video_id) {
+    entryDetails = allEntries[video_id];
+    nowPlaying.innerHTML = '#{0} [ {2} ] {1}'.format(
+        (entryDetails.rank+1), entryDetails.title, entryDetails.score);
+    viewComments.href = "http://www.reddit.com" + entryDetails.permalink;
+}
+
+function onPlayerStateChange(newState) {
+    console.debug('onPlayerStateChange(): ' + newState);
+    if (newState == 1) {
+        pattern = /v=([\w-]{11})/
+        result = ytplayer.getVideoUrl().match(pattern)
+        console.debug(result[1]);
+        updateNowPlaying(result[1]);
+    }
+}
+</script>
+
+    <!-- Le javascript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <!--
+    <script src="/js/jquery.js"></script>
+    <script src="/js/bootstrap-transition.js"></script>
+    <script src="/js/bootstrap-alert.js"></script>
+    <script src="/js/bootstrap-modal.js"></script>
+    <script src="/js/bootstrap-dropdown.js"></script>
+    <script src="/js/bootstrap-scrollspy.js"></script>
+    <script src="/js/bootstrap-tab.js"></script>
+    <script src="/js/bootstrap-tooltip.js"></script>
+    <script src="/js/bootstrap-popover.js"></script>
+    <script src="/js/bootstrap-button.js"></script>
+    <script src="/js/bootstrap-collapse.js"></script>
+    <script src="/js/bootstrap-carousel.js"></script>
+    <script src="/js/bootstrap-typeahead.js"></script>
+    -->
+
+  </body>
+</html>

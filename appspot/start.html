@@ -31,7 +31,6 @@
   </head>
 
   <body>      
-
     <div class="navbar navbar-fixed-top">
       <div class="navbar-inner">
         <div class="container">
@@ -43,7 +42,8 @@
           <a class="brand" href="/">rvyt</a>
           <div class="nav-collapse">
             <ul class="nav">
-              <li class="active"><a href="/">Home</a></li>
+              <li><a href="/">Home</a></li>
+              <li class="active"><a href="/start">Save Playlist</a></li>
               <li><a href="/html/about.html">About</a></li>
               <li><a href="/html/contact.html">Contact</a></li>
             </ul>
@@ -51,21 +51,18 @@
         </div>
       </div>
     </div>
+
     <div class="container">
-        <div class="span6">
-
-<h1>Welcome</h1>
-
-<p>This Web application grabs top videos from 
-<a href="http://www.reddit.com/r/videos">Reddit</a> and makes a 
-<a href="http://www.youtube.com">YouTube</a> playlist.  
+        <div class="span8">
 
 {% if has_credentials %}
+    <h1>Save Playlist</h1>
     <form action="/save_playlist" method="post">
     <table>
         <tr>
             <td>List title:</td>
             <td><input type="text" name="title" value="Reddit videos"></td>
+            <td><font color="red">warning: will overwrite an existing playlist of the same title</font>
         </tr>
         <tr>
             <td>List description:</td>
@@ -93,14 +90,12 @@
     to revoke the granted credentials.</p>
 
 {% else %}
+    <h1>Permission Required</h1>
     <p>This application requires permission to access your YouTube account.
     Click <a href="{{ url }}">here</a> to grant this permission.  You can 
     <a href="https://www.google.com/accounts/b/0/IssuedAuthSubTokens">revoke</a> 
     this permission at any time.</p>
 {% endif %}
-
-<p><small>The local cache of the /r/videos subreddit was last updated at 
-    {{last_update}}.</small></p>
 
         </div> <!-- /span -->
     </div> <!-- /container -->

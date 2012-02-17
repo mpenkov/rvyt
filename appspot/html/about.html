@@ -43,51 +43,47 @@
           <a class="brand" href="/">rvyt</a>
           <div class="nav-collapse">
             <ul class="nav">
-              <li class="active"><a href="/">Home</a></li>
-              <li><a href="/html/about.html">About</a></li>
+              <li><a href="/">Home</a></li>
+              <li class="active"><a href="/html/about.html">About</a></li>
               <li><a href="/html/contact.html">Contact</a></li>
             </ul>
           </div><!--/.nav-collapse -->
         </div>
       </div>
     </div>
+
     <div class="container">
         <div class="span6">
-
-<h1>About</h1>
-
-<p>This Web application grabs top videos from 
-<a href="http://www.reddit.com/r/videos">Reddit</a> and makes a 
-<a href="http://www.youtube.com">YouTube</a> playlist (like
-<a href="http://www.youtube.com/playlist?list=9A83A476899B88A6">this one</a>).  
-It can be convenient if you're in the mood for some entertainment, but don't
-feel like clicking on each individual video.</p>
 
 <h2>Frequently Asked Questions</h2>
 
 <ol>
-    <li><b>Why is creating a YouTube playlist so slow?</b>  The application uses the 
+    <li><strong>Why is the playlist out of date with what's on /r/videos?</strong>  In order
+    to reduce
+    the burden on Reddit, this application keeps a local cache of the top 100
+    entries.  This cache is updated every 30 minutes or so.</li>
+    <li><strong>Why are some videos being skipped?</strong>  Besides YouTube, Reddit links 
+    to videos on various other sites such as Vimeo, Dailymotion, and others.  Since
+    YouTube playlists can only contain YouTube videos, links to sites other than
+    YouTube can only be skipped.</li>
+    <li><strong>Why is creating a YouTube playlist so slow?</strong>  The application uses the 
     <a href="http://code.google.com/apis/youtube/1.0/developers_guide_python.html">YouTube API</a> 
     to create playlists.  There are 
     <a href="http://code.google.com/apis/youtube/faq.html#operation_limits">limits</a> 
     on how often an application can
     call the API.  Once these limits are reached, the application must wait for
     a while before it can make more API calls.  This waiting is what causes the delay.</li>
-    <li><b>Is my account information safe?</b>  It is as safe as any of the other data
+    <li><strong>Is my account information safe?</strong>  It is as safe as any of the other data
     you are keeping with Google.  Once you give your permission, this application uses 
     <a href="http://en.wikipedia.org/wiki/OAuth">OAuth</a> 2.0 to access YouTube on
-    your behalf, but never has access to your password.  You can also
+    your behalf, but <em>never</em> has access to your password.  You can also
     <a href="https://www.google.com/accounts/b/0/IssuedAuthSubTokens">revoke</a> the
     the permission at any time.</li>
-    <li><b>Why aren't the most recent Reddit videos showing?</b>  In order to reduce
-    the burden on Reddit, this application keeps a local cache of the top 100
-    entries.  This cache is updated every 30 minutes or so.</li>
-    <li><b>Why are some videos being skipped?</b>  Besides YouTube, Reddit links 
-    to videos on various sites such as Vimeo, Dailymotion, and others.  Since
-    YouTube playlists can only contain YouTube videos, links to sites other than
-    YouTube can only be skipped.</li>
-    <li><b>Where is the source code for the application?</b>  It is being kept on
-    <a href="https://github.com/mpenkov/rvyt">github</a>.
+    <li><strong>What can the application do with my account once I grant permission?</strong>
+    In theory, the application will have full access to your account: for
+    example, adding comments and ratings, uploading and removing videos, and
+    creating and updating playlists.  In practice, the application will only
+    create a playlist and add videos to it.</li>
 </ol>
 
 <h2>Acknowledgements</h2>

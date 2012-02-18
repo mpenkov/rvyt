@@ -147,12 +147,10 @@ function updateNowPlaying(video_id) {
 
 function onPlayerStateChange(newState) {
     console.debug('onPlayerStateChange(): ' + newState);
-    if (newState == 1) {
-        pattern = /v=([\w-]{11})/
-        result = ytplayer.getVideoUrl().match(pattern)
-        console.debug(result[1]);
-        updateNowPlaying(result[1]);
-    }
+    pattern = /v=([\w-]{11})/
+    result = ytplayer.getVideoUrl().match(pattern)
+    console.debug(result[1]);
+    updateNowPlaying(result[1]);
 }
 </script>
 

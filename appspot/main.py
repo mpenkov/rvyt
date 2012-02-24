@@ -175,33 +175,53 @@ def plist_id_from_title(youtube_api, title):
 
 SHORT_TITLE_LEN = 30
 
+def scrub_string(s):
+    s = s.replace('"', '&quot')
+    s = s.replace("'", "&apos;")
+    return s
+
+def get_current_entries():
+    query = RedditEntry.all()
+    query.order('rank')
+    entries = query.fetch(limit=REDDIT_ENTRY_LIMIT)
+    video_ids = filter(lambda f: f, [ vid_from_url(e.url) for e in entries ])
+    playlist = ','.join(video_ids[1:])
+    last_update = entries[0].timestamp.strftime(DATETIME_FORMAT)
+    all_entries = {}
+    current_index = 0
+    for e in entries:
+        vid = vid_from_url(e.url)
+        elem = { 
+                'permalink' : e.permalink, 
+                'score' : e.score,
+                'title' : scrub_string(e.title),
+                'rank' : e.rank,
+                'url' : e.url,
+                'rank' : e.rank,
+                'index' : current_index,
+                'vid' : vid }        
+        if vid:
+            current_index += 1
+        if len(e.title) < SHORT_TITLE_LEN:
+            elem['short'] = scrub_string(e.title)
+        else:
+            elem['short'] = scrub_string(e.title[:SHORT_TITLE_LEN] + '...')
+        all_entries[vid] = elem
+    return video_ids, playlist, all_entries, last_update
+
+class EditPlaylistHandler(webapp.RequestHandler):
+    def get(self):
+        path = os.path.join(os.path.dirname(__file__), 'edit_playlist.html')
+        video_ids, playlist, entries, last_update = get_current_entries()
+        playlist = [ entries[vid] for vid in video_ids ]
+        variables = { 
+                'all_entries' : simplejson.dumps(playlist),
+                'first' : video_ids[0] }
+        self.response.out.write(template.render(path, variables))
+
 class WelcomeHandler(webapp.RequestHandler):
     def get(self):
-        query = RedditEntry.all()
-        query.order('rank')
-        entries = query.fetch(limit=REDDIT_ENTRY_LIMIT)
-        video_ids = filter(lambda f: f, [ vid_from_url(e.url) for e in entries ])
-        playlist = ','.join(video_ids[1:])
-        last_update = entries[0].timestamp.strftime(DATETIME_FORMAT)
-        all_entries = {}
-        current_index = 0
-        for e in entries:
-            vid = vid_from_url(e.url)
-            elem = { 
-                    'permalink' : e.permalink, 
-                    'score' : e.score,
-                    'title' : e.title,
-                    'rank' : e.rank,
-                    'url' : e.url,
-                    'rank' : e.rank,
-                    'index' : current_index }
-            if vid:
-                current_index += 1
-            if len(e.title) < SHORT_TITLE_LEN:
-                elem['short'] = e.title
-            else:
-                elem['short'] = e.title[:SHORT_TITLE_LEN] + '...'
-            all_entries[vid] = elem
+        video_ids, playlist, all_entries, last_update = get_current_entries()
         top25_list = [ ]
         for i in range(25):
             entry = all_entries[video_ids[i]]
@@ -209,7 +229,8 @@ class WelcomeHandler(webapp.RequestHandler):
 """<li>
 [ %(score)s ] 
 <a href="javascript:ytplayer.playVideoAt(%(index)s);">%(short)s</a></li>""" % entry)
-        variables = { 'first' : video_ids[0], 'playlist' : playlist, 
+        variables = { 'first' : video_ids[0], 
+                'playlist' : playlist, 
                 'last_update' : last_update, 
                 'all_entries' : simplejson.dumps(all_entries),
                 'top25_list' : '\n'.join(top25_list) }
@@ -418,6 +439,7 @@ application = webapp.WSGIApplication([
     ('/', WelcomeHandler),
     ('/start', MainPageHandler),
     ('/save_playlist', SavePlaylistHandler),
+    ('/edit_playlist', EditPlaylistHandler),
     ('/spl_task', SavePlaylistTask),
     ('/opened', ChannelOpenedHandler)
 ], debug=True)

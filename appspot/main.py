@@ -222,10 +222,10 @@ class EditPlaylistHandler(webapp.RequestHandler):
 class WelcomeHandler(webapp.RequestHandler):
     def get(self):
         video_ids, playlist, all_entries, last_update = get_current_entries()
-        top25_list = [ ]
-        for i in range(25):
+        top10_list = [ ]
+        for i in range(10):
             entry = all_entries[video_ids[i]]
-            top25_list.append(
+            top10_list.append(
 """<li>
 [ %(score)s ] 
 <a href="javascript:ytplayer.playVideoAt(%(index)s);">%(short)s</a></li>""" % entry)
@@ -233,7 +233,7 @@ class WelcomeHandler(webapp.RequestHandler):
                 'playlist' : playlist, 
                 'last_update' : last_update, 
                 'all_entries' : simplejson.dumps(all_entries),
-                'top25_list' : '\n'.join(top25_list) }
+                'top10_list' : '\n'.join(top10_list) }
         path = os.path.join(os.path.dirname(__file__), 'welcome.html')
         self.response.out.write(template.render(path, variables))
 

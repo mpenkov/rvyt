@@ -184,6 +184,9 @@ def get_current_entries():
     query = RedditEntry.all()
     query.order('rank')
     entries = query.fetch(limit=REDDIT_ENTRY_LIMIT)
+    #
+    # FIXME: this filtering here causes problems with duplicates later on.
+    #
     video_ids = filter(lambda f: f, [ vid_from_url(e.url) for e in entries ])
     playlist = ','.join(video_ids[1:])
     last_update = entries[0].timestamp.strftime(DATETIME_FORMAT)

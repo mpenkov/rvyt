@@ -116,16 +116,28 @@ var ytplayer;
 var playlist;
 var playlist_ids;
 
-function updateNowPlaying(idx) {
-    entryDetails = playlist[idx];
-    nowPlaying.innerHTML = '#{0} [ {2} ] {1}'.format(
-        (entryDetails.rank+1), entryDetails.title, entryDetails.score);
-    viewComments.href = "http://www.reddit.com" + entryDetails.permalink;
+function updateNowPlaying(video_id) {
+    //
+    // TODO: make all_entries a map, this is too inefficient.
+    //
+    for (var i = 0; i < all_entries.length; ++i) {
+        if (all_entries[i].vid == video_id) {
+            entryDetails = all_entries[i];
+            console.debug('now playing: ' + entryDetails[i]);
+            nowPlaying.innerHTML = '#{0} [ {2} ] {1}'.format(
+                (entryDetails.rank+1), entryDetails.title, entryDetails.score);
+            viewComments.href = "http://www.reddit.com" + entryDetails.permalink;
+            break;
+        }
+    }
 }
 
 function onPlayerStateChange(newState) {
     console.debug('onPlayerStateChange(): ' + newState);
-    updateNowPlaying(ytplayer.getPlaylistIndex());
+    pattern = /v=([\w-]{11})/;
+    result = ytplayer.getVideoUrl().match(pattern);
+    console.debug(result[1]);
+    updateNowPlaying(result[1]);
 }
 
 function onYouTubePlayerReady(playerId) {
@@ -143,6 +155,7 @@ function onSortByScore(reverse) {
                 return Number(a.score) - Number(b.score) 
         }
     );
+    updatePlaylist();
     rebuildTable();
 }
 
@@ -155,6 +168,7 @@ function onSortByRank(reverse) {
                 return Number(a.rank) - Number(b.rank) 
         }
     );
+    updatePlaylist();
     rebuildTable();
 }
 
@@ -176,10 +190,14 @@ function rebuildTable() {
             var newCell = document.createElement('td');
             switch (j) {
                 case 3:
-                    var hyperlink = document.createElement('a');
-                    hyperlink.href = 'javascript:onClickVideo(' + all_entries[i].rank + ')';
-                    hyperlink.innerHTML = cells[j];
-                    newCell.appendChild(hyperlink);
+                    if (all_entries[i].vid) {
+                        var hyperlink = document.createElement('a');
+                        hyperlink.href = 'javascript:onClickVideo(' + all_entries[i].rank + ')';
+                        hyperlink.innerHTML = cells[j];
+                        newCell.appendChild(hyperlink);
+                    } else {
+                        newCell.innerHTML = cells[j];
+                    }
                     break;
                 case 4:
                     var hyperlink = document.createElement('a');
@@ -188,14 +206,15 @@ function rebuildTable() {
                     newCell.appendChild(hyperlink);
                     break;
                 case 0:
-                    var check = document.createElement('input');
-                    check.type = 'checkbox';
-                    check.name = 'select';
-                    check.value = i;
-                    check.id = 'check_' + i;
-                    check.checked = true;
-                    check.enabled = all_entries[i].vid;
-                    newCell.appendChild(check);
+                    if (all_entries[i].vid) {                     
+                        var check = document.createElement('input');
+                        check.type = 'checkbox';
+                        check.name = 'select';
+                        check.value = i;
+                        check.id = 'check_' + i;
+                        check.checked = true;
+                        newCell.appendChild(check);
+                    }
                     break;
                 default:
                     newCell.innerHTML = cells[j];
@@ -225,7 +244,7 @@ function updatePlaylist() {
     playlist_ids = new Array();
     for (i=0; i < all_entries.length; ++i) {
         var check = document.getElementById('check_' + i);
-        if (check.checked) {
+        if (check && check.checked) {
             playlist_ids.push(all_entries[i].vid);
             playlist.push(all_entries[i]);
         }
@@ -247,6 +266,7 @@ function onCuePlaylist(play) {
 
 function onClickVideo(rank) {
     window.scrollTo(0,0);
+    updatePlaylist();
     for (i = 0; i < playlist.length; ++i) {
         if (playlist[i].rank == rank) {
             ytplayer.loadPlaylist(playlist_ids, i);

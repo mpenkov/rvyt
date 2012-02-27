@@ -184,13 +184,8 @@ def get_current_entries():
     query = RedditEntry.all()
     query.order('rank')
     entries = query.fetch(limit=REDDIT_ENTRY_LIMIT)
-    #
-    # FIXME: this filtering here causes problems with duplicates later on.
-    #
-    video_ids = filter(lambda f: f, [ vid_from_url(e.url) for e in entries ])
-    playlist = ','.join(video_ids[1:])
     last_update = entries[0].timestamp.strftime(DATETIME_FORMAT)
-    all_entries = {}
+    all_entries = []
     current_index = 0
     for e in entries:
         vid = vid_from_url(e.url)
@@ -209,31 +204,30 @@ def get_current_entries():
             elem['short'] = scrub_string(e.title)
         else:
             elem['short'] = scrub_string(e.title[:SHORT_TITLE_LEN] + '...')
-        all_entries[vid] = elem
-    return video_ids, playlist, all_entries, last_update
+        all_entries.append(elem)
+    return all_entries, last_update
 
 class EditPlaylistHandler(webapp.RequestHandler):
     def get(self):
         path = os.path.join(os.path.dirname(__file__), 'edit_playlist.html')
-        video_ids, playlist, entries, last_update = get_current_entries()
-        playlist = [ entries[vid] for vid in video_ids ]
+        entries, last_update = get_current_entries()
         variables = { 
-                'all_entries' : simplejson.dumps(playlist),
-                'first' : video_ids[0] }
+                'all_entries' : simplejson.dumps(entries),
+                'first' : [ e['vid'] for e in entries if e['vid'] ][0] }
         self.response.out.write(template.render(path, variables))
 
 class WelcomeHandler(webapp.RequestHandler):
     def get(self):
-        video_ids, playlist, all_entries, last_update = get_current_entries()
+        all_entries, last_update = get_current_entries()
+        youtube_videos = [ e for e in all_entries if e['vid'] ]
         top10_list = [ ]
-        for i in range(10):
-            entry = all_entries[video_ids[i]]
+        for i,entry in enumerate(youtube_videos[:10]):
             top10_list.append(
 """<li>
 [ %(score)s ] 
 <a href="javascript:ytplayer.playVideoAt(%(index)s);">%(short)s</a></li>""" % entry)
-        variables = { 'first' : video_ids[0], 
-                'playlist' : playlist, 
+        variables = { 'first' : youtube_videos[0]['vid'], 
+                'playlist' : ','.join([ yt['vid'] for yt in youtube_videos ]), 
                 'last_update' : last_update, 
                 'all_entries' : simplejson.dumps(all_entries),
                 'top10_list' : '\n'.join(top10_list) }

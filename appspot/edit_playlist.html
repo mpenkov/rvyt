@@ -89,17 +89,24 @@
 
                 <hr>
 
-                <table id="playlist">
-                    <tr id="playlist-header">
-                        <td></td>
-                        <td width="75px">
-                            Rank<a href="javascript:onSortByRank(false)">&#9650;</a><a href="javascript:onSortByRank(true)">&#9660;</a>
-                        </td>
-                        <td width="75px">
-                            Score<a href="javascript:onSortByScore(false)">&#9650;</a><a href="javascript:onSortByScore(true)">&#9660;</a>
-                        </td>
-                        <td>Title</td>
-                    </tr>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th></th>
+                            <th width="75px">
+                                Rank<a href="javascript:onSortByRank(false)">&#9650;</a><a href="javascript:onSortByRank(true)">&#9660;</a>
+                            </th>
+                            <th width="75px">
+                                Score<a href="javascript:onSortByScore(false)">&#9650;</a><a href="javascript:onSortByScore(true)">&#9660;</a>
+                            </th>
+                            <th>Title</th>
+                            <th width="100px">
+                                Category<a href="javascript:onSortByCategory(false)">&#9650;</a><a href="javascript:onSortByCategory(true)">&#9660;</a>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody id="playlist">
+                    </tbody>
                 </table>
         </div>
     </div>
@@ -172,6 +179,33 @@ function onSortByRank(reverse) {
     rebuildTable();
 }
 
+function onSortByRank(reverse) {
+    all_entries.sort(
+        function (a,b) { 
+            if (reverse)
+                return Number(b.rank) - Number(a.rank) 
+            else
+                return Number(a.rank) - Number(b.rank) 
+        }
+    );
+    updatePlaylist();
+    rebuildTable();
+}
+
+function onSortByCategory(reverse) {
+    all_entries.sort(
+        function (a,b) { 
+            if (reverse)
+                return b.category.localeCompare(a.category);
+            else
+                return a.category.localeCompare(b.category);
+        }
+    );
+    console.debug(all_entries);
+    updatePlaylist();
+    rebuildTable();
+}
+
 function rebuildTable() {
     while (tblPlaylist.rows.length > 1)
         tblPlaylist.deleteRow(1);
@@ -185,26 +219,11 @@ function rebuildTable() {
         cells[1] = 1 + all_entries[i].rank;
         cells[2] = '<strong>' + all_entries[i].score + '</strong>';
         cells[3] = all_entries[i].title;
+        cells[4] = all_entries[i].category;
 
         for (j = 0; j < cells.length; ++j) {
             var newCell = document.createElement('td');
             switch (j) {
-                case 3:
-                    if (all_entries[i].vid) {
-                        var hyperlink = document.createElement('a');
-                        hyperlink.href = 'javascript:onClickVideo(' + all_entries[i].rank + ')';
-                        hyperlink.innerHTML = cells[j];
-                        newCell.appendChild(hyperlink);
-                    } else {
-                        newCell.innerHTML = cells[j];
-                    }
-                    break;
-                case 4:
-                    var hyperlink = document.createElement('a');
-                    hyperlink.href = all_entries[i].permalink;
-                    hyperlink.innerHTML = 'Comments';
-                    newCell.appendChild(hyperlink);
-                    break;
                 case 0:
                     if (all_entries[i].vid) {                     
                         var check = document.createElement('input');
@@ -214,6 +233,16 @@ function rebuildTable() {
                         check.id = 'check_' + i;
                         check.checked = true;
                         newCell.appendChild(check);
+                    }
+                    break;
+                case 3:
+                    if (all_entries[i].vid) {
+                        var hyperlink = document.createElement('a');
+                        hyperlink.href = 'javascript:onClickVideo(' + all_entries[i].rank + ')';
+                        hyperlink.innerHTML = cells[j];
+                        newCell.appendChild(hyperlink);
+                    } else {
+                        newCell.innerHTML = cells[j];
                     }
                     break;
                 default:

@@ -12,7 +12,6 @@ import logging
 import pickle
 import random
 import urllib
-import urlparse
 import time
 import wsgiref.handlers
 import simplejson
@@ -77,6 +76,8 @@ decorator = oauth2decorator_from_clientsecrets(
 
 DATETIME_FORMAT = '%H:%M %d/%m/%Y GMT'
 
+from admin import vid_from_url, YouTubeEntry
+
 class MyOAuthToken(OAuthToken):
     """This is a an ugly hack to make the old 1.0 API work with OAuth2."""
     def __init__(self, *args):
@@ -131,37 +132,6 @@ def strip_tags(html):
     s.feed(html)
     return s.get_data()
 
-def vid_from_url(url):
-    """
-    If the specified URL is a YouTube video, returns the video ID.
-    Otherwise, returns None.
-    """
-    p = urlparse.urlparse(url)
-    compo = p.path.split('/')
-    if p.netloc in [ 'www.youtu.be', 'youtu.be' ]:
-        return compo[1]
-    elif p.netloc in [ 'www.youtube.com', 'youtube.com' ]:
-        args = p.query.split(';')
-        video_id = None
-        try:
-            #
-            # http://www.youtube.com/watch?v=WTGUjRJiqik
-            #
-            for key,val in map(lambda f: f.split('='), args):
-                if key == 'v':
-                    return val[:11]
-        except ValueError:
-            pass
-
-        if compo[-2] == 'v':
-            #
-            # http://www.youtube.com/v/WTGUjRJiqik
-            #
-            return compo[-1]
-        return None
-    else:
-        return None
-
 def plist_id_from_title(youtube_api, title):
     """
     Returns the ID of the playlist with the specified title if it exists, or
@@ -181,9 +151,16 @@ def scrub_string(s):
     return s
 
 def get_current_entries():
+    query = YouTubeEntry.all()
+    entries = [ x for x in query ]
+    youtube_entries = { }
+    for e in entries:
+        youtube_entries[e.video_id] = { 'category' : e.category }
+
     query = RedditEntry.all()
     query.order('rank')
     entries = query.fetch(limit=REDDIT_ENTRY_LIMIT)
+
     last_update = entries[0].timestamp.strftime(DATETIME_FORMAT)
     all_entries = []
     current_index = 0
@@ -200,6 +177,13 @@ def get_current_entries():
                 'vid' : vid }        
         if vid:
             current_index += 1
+            try:
+                elem['category'] = youtube_entries[vid]['category']
+            except KeyError:
+                elem['category'] = ''
+        else:
+            elem['category'] = ''
+
         if len(e.title) < SHORT_TITLE_LEN:
             elem['short'] = scrub_string(e.title)
         else:

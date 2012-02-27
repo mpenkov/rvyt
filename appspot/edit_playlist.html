@@ -227,14 +227,15 @@ function rebuildTable() {
 function onSelectNone() {
     for (i=0; i < all_entries.length; ++i) {
         var check = document.getElementById('check_' + i);
-        check.checked = false;
+        if (check)
+            check.checked = false;
     }
 }
 
 function onSelectAll() {
     for (i=0; i < all_entries.length; ++i) {
         var check = document.getElementById('check_' + i);
-        if (all_entries[i].vid)
+        if (check)
             check.checked = true;
     }
 }
@@ -273,7 +274,7 @@ function onClickVideo(rank) {
             return;
         }
     }
-    ytplayer.loadVideoById(all_entries[i].vid, 0);
+    ytplayer.loadPlaylist([ all_entries[rank].vid ], 0);
 }
 
 function onPrev() {

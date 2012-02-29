@@ -37,6 +37,8 @@ from gdata.auth import OAuthToken, OAuthInputParams
 
 import logging
 
+from collections import defaultdict
+
 # CLIENT_SECRETS, name of a file containing the OAuth 2.0 information for this
 # application, including client_id and client_secret, which are found
 # on the API Access tab on the Google APIs
@@ -195,26 +197,49 @@ class EditPlaylistHandler(webapp.RequestHandler):
     def get(self):
         path = os.path.join(os.path.dirname(__file__), 'edit_playlist.html')
         entries, last_update = get_current_entries()
+        categories = self.request.get_all('cat')
         variables = { 
                 'all_entries' : simplejson.dumps(entries),
-                'first' : [ e['vid'] for e in entries if e['vid'] ][0] }
+                'first' : [ e['vid'] for e in entries if e['vid'] ][0],
+                'categories' : simplejson.dumps(categories) }
         self.response.out.write(template.render(path, variables))
 
 class WelcomeHandler(webapp.RequestHandler):
     def get(self):
         all_entries, last_update = get_current_entries()
+        num = defaultdict(int)
+        for e in all_entries:
+            num[e['category']] += 1
+
         youtube_videos = [ e for e in all_entries if e['vid'] ]
-        top10_list = [ ]
-        for i,entry in enumerate(youtube_videos[:10]):
-            top10_list.append(
+        top_list = [ ]
+        for i,entry in enumerate(youtube_videos[:20]):
+            top_list.append(
 """<li>
 [ %(score)s ] 
 <a href="javascript:ytplayer.playVideoAt(%(index)s);">%(short)s</a></li>""" % entry)
         variables = { 'first' : youtube_videos[0]['vid'], 
-                'playlist' : ','.join([ yt['vid'] for yt in youtube_videos ]), 
+                'playlist' : ','.join([ yt['vid'] for yt in youtube_videos ][1:]), 
                 'last_update' : last_update, 
                 'all_entries' : simplejson.dumps(all_entries),
-                'top10_list' : '\n'.join(top10_list) }
+                'top_list' : '\n'.join(top_list),
+                #
+                # FIXME: there has got to be a better way to do this...
+                #
+                'num_animals' : num['Animals'],
+                'num_autos' : num['Autos'],
+                'num_comedy' : num['Comedy'],
+                'num_education' : num['Education'],
+                'num_entertainment' : num['Entertainment'],
+                'num_film' : num['Film'],
+                'num_howto' : num['Howto'],
+                'num_music' : num['Music'],
+                'num_news' : num['News'],
+                'num_people' : num['People'],
+                'num_sports' : num['Sports'],
+                'num_tech' : num['Tech'],
+                'num_unknown' : num[''],
+                }
         path = os.path.join(os.path.dirname(__file__), 'welcome.html')
         self.response.out.write(template.render(path, variables))
 

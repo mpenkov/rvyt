@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- shiftwidth=2 indentexpr= -->
 <html lang="en">
   <head>
     <meta charset="utf-8">
@@ -69,22 +70,40 @@
                        "ytapiplayer", "640", "360", "8", null, null, params, atts);
 </script>
 
-          <p><a class="btn btn-large btn-primary" href="/edit_playlist">Customize playlist &raquo;</a></p>
-
+        <p><a class="btn" id="view_comments" href="">View comments &raquo;</a></p>
         </div>
 
         <div class="row-fluid">
             <div class="span3">
-              <h2>Current Top 10</h2>
+              <h2>Current Top 20</h2>
               <ol>
-                {{ top10_list }}
+                {{ top_list }}
               </ol>
               <p><small>Last updated {{last_update}}</small></p>
             </div><!--/span-->
             <div class="span3">
-              <h2>Top Comments</h2>
-              <ol id="top_comments"><li>TODO</li></ol>
-              <p><a class="btn" id="view_comments" href="">View all comments &raquo;</a></p>
+              <h2>Categories</h2>
+              <!-- <p><a class="btn" href="javascript:onSelectAll();">Select all</a>
+              <a class="btn" href="javascript:onSelectNone();">Select none</a></p> -->
+              <form action="/edit_playlist" method="GET">
+                <p>
+                  <input type="checkbox" name="cat" value="Animals"> Animals</input><small> ({{num_animals}} videos)</small><br/>
+                  <input type="checkbox" name="cat" value="Autos"> Autos</input><small> ({{num_autos}} videos)</small><br/>
+                  <input type="checkbox" name="cat" value="Comedy"> Comedy</input><small> ({{num_comedy}} videos)</small><br/>
+                  <input type="checkbox" name="cat" value="Education"> Education</input><small> ({{num_education}} videos)</small><br/>
+                  <input type="checkbox" name="cat" value="Entertainment"> Entertainment</input><small> ({{num_entertainment}} videos)</small><br/>
+                  <input type="checkbox" name="cat" value="Film"> Film</input><small> ({{num_film}} videos)</small><br/>
+                  <input type="checkbox" name="cat" value="Howto"> Howto</input><small> ({{num_howto}} videos)</small><br/>
+                  <input type="checkbox" name="cat" value="Music"> Music</input><small> ({{num_howto}} videos)</small><br/>
+                  <input type="checkbox" name="cat" value="News"> News</input><small> ({{num_news}} videos)</small><br/>
+                  <input type="checkbox" name="cat" value="People"> People</input><small> ({{num_animals}} videos)</small><br/>
+                  <input type="checkbox" name="cat" value="Sports"> Sports</input><small> ({{num_sports}} videos)</small><br/>
+                  <input type="checkbox" name="cat" value="Tech"> Tech</input><small> ({{num_tech}} videos)</small><br/>
+                  <input type="checkbox" name="cat" value=""> Unknown</input><small> ({{num_unknown}} videos)</small><br/>
+                  <input type="submit" class="btn btn-large btn-primary" value="Customize playlist &raquo;">
+                </p>
+              </form>
+
             </div><!--/span-->
             <div class="span3">
               <h2>Save to YouTube</h2>

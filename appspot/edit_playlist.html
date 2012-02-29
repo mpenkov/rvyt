@@ -123,6 +123,8 @@ var ytplayer;
 var playlist;
 var playlist_ids;
 
+var categories = JSON.parse('{{categories}}');
+
 function updateNowPlaying(video_id) {
     //
     // TODO: make all_entries a map, this is too inefficient.
@@ -207,8 +209,8 @@ function onSortByCategory(reverse) {
 }
 
 function rebuildTable() {
-    while (tblPlaylist.rows.length > 1)
-        tblPlaylist.deleteRow(1);
+    while (tblPlaylist.rows.length)
+        tblPlaylist.deleteRow(0);
     var rows = new Array();
     var cells = new Array();
     for (i=0; i < all_entries.length; ++i) {
@@ -248,7 +250,9 @@ function rebuildTable() {
                 default:
                     newCell.innerHTML = cells[j];
             }
-            newRow.appendChild(newCell);
+            if (!categories.length || 
+                    categories.indexOf(all_entries[i].category) != -1)
+                newRow.appendChild(newCell);
         }
     }
 }
@@ -315,8 +319,7 @@ function onPrev() {
 
 function onNext() {
     idx = ytplayer.getPlaylistIndex();
-    if (idx < playlist_ids.length) {
-        ++idx;
+    if (++idx < playlist_ids.length) {
         ytplayer.loadPlaylist(playlist_ids, idx);
     }
 }

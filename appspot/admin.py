@@ -70,6 +70,7 @@ class YouTubeEntry(db.Model):
     video_id = db.StringProperty()
     category = db.StringProperty()
     keywords = db.StringProperty()
+    duration = db.IntegerProperty()
 
 class UpdateHandler(webapp.RequestHandler):
     """Put an UpdateTask on the task queue."""
@@ -136,8 +137,12 @@ class UpdateTask(webapp.RequestHandler):
                         timestamp = timestamp)
                 video_id = vid_from_url(reddit_store.url)
                 if video_id:
-                    youtube_video = yt_service.GetYouTubeVideoEntry(
+                    try:
+                        youtube_video = yt_service.GetYouTubeVideoEntry(
                             video_id=video_id) 
+                    except gdata.service.RequestError, re:
+                        logging.error(re)
+                        continue
 
                     try:
                         tags = youtube_video.media.keywords.text[:MAX_STRLEN]
@@ -156,7 +161,8 @@ class UpdateTask(webapp.RequestHandler):
                     youtube_store = YouTubeEntry( 
                             video_id=video_id, 
                             category=category, 
-                            keywords=tags)
+                            keywords=tags,
+                            duration=int(youtube_video.media.duration.seconds))
                     youtube_store.put()
                 logging.info('adding new entry %s' % entry['url'])
             reddit_store.put()

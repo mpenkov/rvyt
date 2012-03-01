@@ -159,10 +159,15 @@ var allEntries = {{all_entries}};
 updateNowPlaying('{{first}}');
 
 function updateNowPlaying(video_id) {
-    entryDetails = allEntries[video_id];
-    nowPlaying.innerHTML = '#{0} [ {2} ] {1}'.format(
-        (entryDetails.rank+1), entryDetails.title, entryDetails.score);
-    viewComments.href = "http://www.reddit.com" + entryDetails.permalink;
+    for (var i = 0; i < allEntries.length; ++i) {
+        if (allEntries[i].vid == video_id) {
+            var entry = allEntries[i];
+            nowPlaying.innerHTML = '#{0} [ {2} ] {1}'.format(
+                (entry.rank+1), entry.title, entry.score);
+            viewComments.href = "http://www.reddit.com" + entry.permalink;
+            break;
+        }
+    }
 }
 
 function onPlayerStateChange(newState) {

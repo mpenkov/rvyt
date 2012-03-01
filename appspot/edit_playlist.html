@@ -5,7 +5,6 @@
     <title>rvyt: Reddit Videos to YouTube Playlist</title>
     <meta name="description" content="">
     <meta name="author" content="">
-    <meta name="google-site-verification" content="Z4QNJAX48JgbeEZm4yAwC0rWyapuCHE4RDO8MaE6DGc" />
 
     <!-- Le HTML5 shim, for IE6-8 support of HTML elements -->
     <!--[if lt IE 9]>
@@ -125,6 +124,8 @@ var playlist_ids;
 
 var categories = JSON.parse('{{categories}}');
 
+var checked_status = new Array();
+
 function updateNowPlaying(video_id) {
     //
     // TODO: make all_entries a map, this is too inefficient.
@@ -156,6 +157,7 @@ function onYouTubePlayerReady(playerId) {
 }
 
 function onSortByScore(reverse) {
+    updateCheckedStatus();
     all_entries.sort(
         function (a,b) { 
             if (reverse)
@@ -169,19 +171,7 @@ function onSortByScore(reverse) {
 }
 
 function onSortByRank(reverse) {
-    all_entries.sort(
-        function (a,b) { 
-            if (reverse)
-                return Number(b.rank) - Number(a.rank) 
-            else
-                return Number(a.rank) - Number(b.rank) 
-        }
-    );
-    updatePlaylist();
-    rebuildTable();
-}
-
-function onSortByRank(reverse) {
+    updateCheckedStatus();
     all_entries.sort(
         function (a,b) { 
             if (reverse)
@@ -195,6 +185,7 @@ function onSortByRank(reverse) {
 }
 
 function onSortByCategory(reverse) {
+    updateCheckedStatus();
     all_entries.sort(
         function (a,b) { 
             if (reverse)
@@ -208,11 +199,22 @@ function onSortByCategory(reverse) {
     rebuildTable();
 }
 
+function updateCheckedStatus() {
+    for (i=0; i < all_entries.length; ++i) {
+        var checkbox = document.getElementById('check_' + i);
+        if (!checkbox)
+            continue;
+        checked_status[all_entries[i].rank] = checkbox.checked;
+    }
+}
+
 function rebuildTable() {
-    while (tblPlaylist.rows.length)
-        tblPlaylist.deleteRow(0);
     var rows = new Array();
     var cells = new Array();
+
+    while (tblPlaylist.rows.length)
+        tblPlaylist.deleteRow(0);
+
     for (i=0; i < all_entries.length; ++i) {
         var newRow = document.createElement('tr');
         tblPlaylist.appendChild(newRow)
@@ -233,7 +235,7 @@ function rebuildTable() {
                         check.name = 'select';
                         check.value = i;
                         check.id = 'check_' + i;
-                        check.checked = true;
+                        check.checked = checked_status[all_entries[i].rank];
                         newCell.appendChild(check);
                     }
                     break;
@@ -324,6 +326,9 @@ function onNext() {
     }
 }
 
+for (i=0; i < all_entries.length; ++i) {
+    checked_status[all_entries[i].rank] = true;
+}
 rebuildTable();
 </script>
 <script type="text/javascript">

@@ -102,6 +102,9 @@
                             <th width="100px">
                                 Category<a href="javascript:onSortByCategory(false)">&#9650;</a><a href="javascript:onSortByCategory(true)">&#9660;</a>
                             </th>
+                            <th width="100px">
+                                Duration<a href="javascript:onSortByDuration(false)">&#9650;</a><a href="javascript:onSortByDuration(true)">&#9660;</a>
+                            </th>
                         </tr>
                     </thead>
                     <tbody id="playlist">
@@ -199,6 +202,21 @@ function onSortByCategory(reverse) {
     rebuildTable();
 }
 
+function onSortByDuration(reverse) {
+    updateCheckedStatus();
+    all_entries.sort(
+        function (a,b) { 
+            if (reverse)
+                return b.duration - a.duration;
+            else
+                return a.duration - b.duration;
+        }
+    );
+    console.debug(all_entries);
+    updatePlaylist();
+    rebuildTable();
+}
+
 function updateCheckedStatus() {
     for (i=0; i < all_entries.length; ++i) {
         var checkbox = document.getElementById('check_' + i);
@@ -224,6 +242,17 @@ function rebuildTable() {
         cells[2] = '<strong>' + all_entries[i].score + '</strong>';
         cells[3] = all_entries[i].title;
         cells[4] = all_entries[i].category;
+        cells[5] = '';
+
+        if (all_entries[i].duration) {
+            var minutes = Math.floor(all_entries[i].duration/60);
+            var seconds = all_entries[i].duration-60*minutes;
+            if (seconds < 10)
+                seconds = "0" + String(seconds);
+            else
+                seconds = String(seconds)
+            cells[5] = String(minutes) + ':' + seconds;
+        }
 
         for (j = 0; j < cells.length; ++j) {
             var newCell = document.createElement('td');

@@ -39,6 +39,7 @@ import logging
 from collections import defaultdict
 
 from common import CLIENT_SECRETS, USER_AGENT, YOUTUBE_DEVELOPER_KEY
+from common import youtube_login, credentials_to_oauth_token
 from admin import REDDIT_ENTRY_LIMIT, RedditEntry
 
 
@@ -166,6 +167,7 @@ class EditPlaylistAuthHandler(webapp.RequestHandler):
             return
 
         try:
+            token = credentials_to_oauth_token(decorator.credentials)
             youtube_api = youtube_login(token)
             #
             # TODO: get videos viewed by this user.

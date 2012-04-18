@@ -30,7 +30,7 @@ href="https://code.google.com/apis/console">APIs Console</a>.
 """ % CLIENT_SECRETS
 
 OAUTH_METHOD = gdata.oauth.OAuthSignatureMethod_HMAC_SHA1
-GDATA_URL = 'http://gdata.youtube.com', 
+GDATA_URL = 'http://gdata.youtube.com' 
 
 USER_AGENT = 'http://rvytpl.appspot.com'
 YOUTUBE_DEVELOPER_KEY = 'AI39si4TTIXb-M4G0rhm4kG1eYowjK2tlHZlrxGS4vOegXEK0oS3LRrmx-PMbrMRVtfHqpJ6gG60qQ2U4w6X_DnqfmkuqtTDvA'

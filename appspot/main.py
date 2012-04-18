@@ -98,7 +98,8 @@ def get_current_entries():
     entries = [ x for x in query ]
     youtube_entries = { }
     for e in entries:
-        youtube_entries[e.video_id] = { 'category' : e.category }
+        youtube_entries[e.video_id] = { 
+                'category' : e.category, 'duration' : e.duration }
 
     query = RedditEntry.all()
     query.order('rank')
@@ -131,15 +132,19 @@ def get_current_entries():
                 'url' : e.url,
                 'rank' : e.rank,
                 'index' : current_index,
-                'vid' : vid }        
+                'vid' : vid,
+                'category' : '',
+                'duration' : 0 }        
         if vid:
             current_index += 1
             try:
                 elem['category'] = youtube_entries[vid]['category']
             except KeyError:
-                elem['category'] = ''
-        else:
-            elem['category'] = ''
+                pass
+            try:
+                elem['duration'] = youtube_entries[vid]['duration']
+            except KeyError:
+                pass
 
         if len(e.title) < SHORT_TITLE_LEN:
             elem['short'] = scrub_string(e.title)
@@ -196,7 +201,7 @@ class WelcomeHandler(webapp.RequestHandler):
 
         youtube_videos = [ e for e in all_entries if e['vid'] ]
         top_list = [ ]
-        for i,entry in enumerate(youtube_videos[:20]):
+        for i,entry in enumerate(youtube_videos[:15]):
             top_list.append(
 """<li>
 [ %(score)s ] 

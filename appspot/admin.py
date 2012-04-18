@@ -14,7 +14,7 @@ import urllib2
 import urlparse
 import simplejson
 
-USER_AGENT = 'http://rvytpl.appspot.com'
+from common import USER_AGENT
 
 """Fetch and keep this many entries from the subreddit."""
 REDDIT_ENTRY_LIMIT = 100

@@ -82,10 +82,11 @@
               <p><small>Last updated {{last_update}}</small></p>
             </div><!--/span-->
             <div class="span3">
-              <h2>Categories</h2>
+              <h2>Customize Playlist</h2>
               <!-- <p><a class="btn" href="javascript:onSelectAll();">Select all</a>
               <a class="btn" href="javascript:onSelectNone();">Select none</a></p> -->
-              <form action="/edit_playlist" method="GET">
+              <form id="mainForm" action="/edit_playlist" method="GET">
+                <p>Please select relevant categories (selecting none is the same as selecting all):</p>
                 <p>
                   <input type="checkbox" name="cat" value="Animals"> Animals</input><small> ({{num_animals}} videos)</small><br/>
                   <input type="checkbox" name="cat" value="Autos"> Autos</input><small> ({{num_autos}} videos)</small><br/>
@@ -106,42 +107,25 @@
 
             </div><!--/span-->
             <div class="span3">
-              <h2>Save to YouTube</h2>
+              <h2>Integrate with YouTube?</h2>
 
-                <p>You can also save this playlist to <a href="http://www.youtube.com">YouTube</a>, so
-                that you can manipulate it like 
-                <a href="http://www.youtube.com/playlist?list=9A83A476899B88A6">any regular playlist</a>:</p>
+                <p><input type="radio" name="integrate" value="yes" onclick="integrate(true);"> Yes</input></p>
+                <p><input type="radio" name="integrate" value="no" onclick="integrate(false);" checked="true"> No</input></p>        
+                <p>
+                  Integrating with YouTube will allow you to conveniently
+                  filter out YouTube videos that you have already watched.
+                </p>
 
-                <ul>
-                    <li>re-order videos</li>
-                    <li>remove videos you don't want to watch or have already seen</a></li>
-                    <li>share your playlist with others</li>
-                    <li>...</li>
-                </ul>
-
-                <p>This feature requires permission to access your YouTube account (click 
-                <a href="/html/faq.html">here</a> to find out more).</p>
-                <a class="btn" href="/start">Save playlist to YouTube &raquo;</a>
-              <p>
+                <p>
+                  This feature requires permission to access your YouTube
+                  account (click 
+                  <a href="/html/about.html">here</a> to find out more).</p>
+                </p>
             </div><!--/span-->
           </div><!--/row-->
         </div><!--/span-->
       </div><!--/row-->
     </div> <!-- /container -->
-
-    <!--
-<div class="span8">
-
-<h2>Welcome</h2>
-
-<p>This Web application grabs top videos from 
-<a href="http://www.reddit.com/r/videos">Reddit</a> and makes a playlist than
-you can watch without having to touch the keyboard or mouse.  It can be
-convenient if you're in the mood for some entertainment, but don't feel like
-clicking on each individual video to start playing it.</p>
-
--->
-
 </div> <!-- /span -->
 
 <script src="/js/make.js"></script>
@@ -176,6 +160,15 @@ function onPlayerStateChange(newState) {
     result = ytplayer.getVideoUrl().match(pattern);
     console.debug(result[1]);
     updateNowPlaying(result[1]);
+}
+
+function integrate(do_integrate) {
+    var mainForm = document.getElementById("mainForm");
+    if (do_integrate) {
+        mainForm.action = "/edit_playlist_auth";
+    } else {
+        mainForm.action = "/edit_playlist";
+    }
 }
 </script>
 

@@ -1,0 +1,1 @@
+/usr/share/pyshared/mako/ext/autohandler.py

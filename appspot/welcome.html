@@ -1,5 +1,7 @@
 <!DOCTYPE html>
-<!-- shiftwidth=2 indentexpr= -->
+<!-- 
+vim: shiftwidth=2:nosmartindent 
+-->
 <html lang="en">
   <head>
     <meta charset="utf-8">
@@ -54,10 +56,43 @@
     </div>
 
     <div class="container-fluid">
-        <div class="hero-unit">
-            <h1>/r/videos Top 100 Playlist</h1>
-
-            <h2 id="now_playing"><span id="score"></span></h2>
+      <div class="row-fluid">
+        <div class="span4">
+          <div class="well sidebar-nav">
+            <ul class="nav nav-list">
+              <li class="nav-header">Current Top Videos</li>
+              <span> <!-- dummy span -->
+              % for (i,entry) in enumerate(yt_entries):
+                % if i % 20 == 0:
+                </span>
+                <span id="spanTopPage${i/20}">
+                % endif
+                  <li>
+                  ${entry.rank+1}. [ <strong>${entry.score}</strong> ]
+                    <a href="javascript:ytplayer.playVideoAt(${i})">
+                      ${entry.short_title} 
+                    </a>
+                  </li>
+              % endfor
+              </span>
+            </ul>
+            <div class="pagination">
+              <ul>
+                <li id="paginatorPrev"><a href="javascript:showPage(currentPage-1)">&laquo; Prev</a></li>
+                % for i in range(len(yt_entries)/20):
+                <li id="paginator${i}"><a href="javascript:showPage(${i})">${i+1}</a></li>
+                % endfor
+                <li id="paginatorNext"><a href="javascript:showPage(currentPage+1)">Next &raquo;</a></li>
+              </ul>
+            </div>
+            <p><small>Last updated ${last_update}</small></p>
+            <p><a class="btn btn-large btn-primary btn-success" href="http://reddit.com/r/videos">Go to reddit.com/r/videos &raquo;</a></p>
+          </div><!--/.well -->
+        </div><!--/span-->
+        <div class="span8">
+          <div class="hero-unit">
+            <div class="page-header"><h1>/r/videos Top 100 Playlist</h1></div>
+            <h2 id="h2NowPlaying"></h2>
 
 <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/swfobject/2.2/swfobject.js"></script>    
 <div id="ytapiplayer">
@@ -66,70 +101,39 @@
 <script type="text/javascript">
     var params = { allowScriptAccess: "always", allowFullScreen: "true" };
     var atts = { id: "myytplayer" };
-    swfobject.embedSWF("http://www.youtube.com/v/{{first}}?enablejsapi=1&playerapiid=ytplayer&version=3&playlist={{playlist}}",
-                       "ytapiplayer", "640", "360", "8", null, null, params, atts);
+    swfobject.embedSWF("http://www.youtube.com/v/${yt_entries[0].ytid}?enablejsapi=1&playerapiid=ytplayer&version=3&playlist=${playlist}",
+     "ytapiplayer", "640", "360", "8", null, null, params, atts);
 </script>
 
-        <p><a class="btn" id="view_comments" href="">View comments &raquo;</a></p>
-        </div>
-
-        <div class="row-fluid">
+            <p><a class="btn" id="btnViewComments" href="">View comments &raquo;</a></p>
+          </div> <!-- /hero-unit -->
+          <div class="row-fluid">
             <div class="span3">
-              <h2>Current Top Videos</h2>
-              <ol>
-                {{ top_list }}
-              </ol>
-              <p><small>Last updated {{last_update}}</small></p>
-              <p><a class="btn btn-large btn-primary btn-success" href="http://reddit.com/r/videos">Go to reddit.com/r/videos &raquo;</a></p>
-            </div><!--/span-->
-            <div class="span3">
-              <h2>Customize Playlist</h2>
-              <!-- <p><a class="btn" href="javascript:onSelectAll();">Select all</a>
-              <a class="btn" href="javascript:onSelectNone();">Select none</a></p> -->
-              <form id="mainForm" action="/edit_playlist" method="GET">
-                <p>Please select relevant categories (selecting none is the same as selecting all):</p>
-                <p>
-                  <input type="checkbox" name="cat" value="Animals"> Animals</input><small> ({{num_animals}} videos)</small><br/>
-                  <input type="checkbox" name="cat" value="Autos"> Autos</input><small> ({{num_autos}} videos)</small><br/>
-                  <input type="checkbox" name="cat" value="Comedy"> Comedy</input><small> ({{num_comedy}} videos)</small><br/>
-                  <input type="checkbox" name="cat" value="Education"> Education</input><small> ({{num_education}} videos)</small><br/>
-                  <input type="checkbox" name="cat" value="Entertainment"> Entertainment</input><small> ({{num_entertainment}} videos)</small><br/>
-                  <input type="checkbox" name="cat" value="Film"> Film</input><small> ({{num_film}} videos)</small><br/>
-                  <input type="checkbox" name="cat" value="Howto"> Howto</input><small> ({{num_howto}} videos)</small><br/>
-                  <input type="checkbox" name="cat" value="Music"> Music</input><small> ({{num_howto}} videos)</small><br/>
-                  <input type="checkbox" name="cat" value="News"> News</input><small> ({{num_news}} videos)</small><br/>
-                  <input type="checkbox" name="cat" value="People"> People</input><small> ({{num_animals}} videos)</small><br/>
-                  <input type="checkbox" name="cat" value="Sports"> Sports</input><small> ({{num_sports}} videos)</small><br/>
-                  <input type="checkbox" name="cat" value="Tech"> Tech</input><small> ({{num_tech}} videos)</small><br/>
-                  <input type="checkbox" name="cat" value=""> Unknown</input><small> ({{num_unknown}} videos)</small><br/>
-                  <input type="submit" class="btn btn-large btn-primary" value="Customize playlist &raquo;">
-                </p>
-              </form>
-
-            </div><!--/span-->
-            <div class="span3">
-              <h2>Integrate with YouTube?</h2>
-
-                <p><input type="radio" name="integrate" value="yes" onclick="integrate(true);"> Yes</input></p>
-                <p><input type="radio" name="integrate" value="no" onclick="integrate(false);" checked="true"> No</input></p>        
-                <p>
-                  Integrating with YouTube will allow you to conveniently
-                  filter out YouTube videos that you have already watched.
-                </p>
-
-                <p>
-                  This feature requires permission to access your YouTube
-                  account (click 
-                  <a href="/html/about.html">here</a> to find out more).</p>
-                </p>
             </div><!--/span-->
           </div><!--/row-->
-        </div><!--/span-->
+        </div><!-- /span9 -->
       </div><!--/row-->
-    </div> <!-- /container -->
-</div> <!-- /span -->
+    </div> <!-- /container-fluid -->
 
 <script src="/js/make.js"></script>
+
+<!-- Le javascript
+================================================== -->
+<!-- Placed at the end of the document so the pages load faster -->
+<script src="/js/jquery.js"></script>
+<script src="/js/bootstrap-transition.js"></script>
+<script src="/js/bootstrap-alert.js"></script>
+<script src="/js/bootstrap-modal.js"></script>
+<script src="/js/bootstrap-dropdown.js"></script>
+<script src="/js/bootstrap-scrollspy.js"></script>
+<script src="/js/bootstrap-tab.js"></script>
+<script src="/js/bootstrap-tooltip.js"></script>
+<script src="/js/bootstrap-popover.js"></script>
+<script src="/js/bootstrap-button.js"></script>
+<script src="/js/bootstrap-collapse.js"></script>
+<script src="/js/bootstrap-carousel.js"></script>
+<script src="/js/bootstrap-typeahead.js"></script>
+
 <script type="text/javascript">
 var ytplayer;
 function onYouTubePlayerReady(playerId) {
@@ -137,60 +141,51 @@ function onYouTubePlayerReady(playerId) {
     ytplayer.addEventListener("onStateChange", "onPlayerStateChange");
 }
 
-var nowPlaying = document.getElementById("now_playing");
-var viewComments = document.getElementById("view_comments");
-var score = document.getElementById("score");
-var allEntries = {{all_entries}};
-updateNowPlaying('{{first}}');
+var currentPage = 0;
+var allEntries = Array();
+% for e in yt_entries:
+allEntries["${e.ytid}"] = { title : "${e.title}",  rank : ${e.rank}, score : ${e.score}, ytid : "${e.ytid}", permalink : "${e.permalink}" };
+% endfor
+updateNowPlaying("${yt_entries[0].ytid}");
+showPage(0);
 
 function updateNowPlaying(video_id) {
-    for (var i = 0; i < allEntries.length; ++i) {
-        if (allEntries[i].vid == video_id) {
-            var entry = allEntries[i];
-            nowPlaying.innerHTML = '#{0} [ {2} ] {1}'.format(
-                (entry.rank+1), entry.title, entry.score);
-            viewComments.href = "http://www.reddit.com" + entry.permalink;
-            break;
-        }
-    }
+  console.debug("updateNowPlaying():" + video_id);
+  var entry = allEntries[video_id];
+  $("#h2NowPlaying").html('#{0} [ {2} ] {1}'.format((entry.rank+1), entry.title, entry.score));
+  $("#btnViewComments").attr("href", "http://www.reddit.com" + entry.permalink);
 }
 
 function onPlayerStateChange(newState) {
-    console.debug('onPlayerStateChange(): ' + newState);
-    pattern = /v=([\w-]{11})/;
-    result = ytplayer.getVideoUrl().match(pattern);
-    console.debug(result[1]);
-    updateNowPlaying(result[1]);
+  console.debug('onPlayerStateChange(): ' + newState);
+  pattern = /v=([\w-]{11})/;
+  result = ytplayer.getVideoUrl().match(pattern);
+  console.debug(result[1]);
+  updateNowPlaying(result[1]);
 }
 
-function integrate(do_integrate) {
-    var mainForm = document.getElementById("mainForm");
-    if (do_integrate) {
-        mainForm.action = "/edit_playlist_auth";
-    } else {
-        mainForm.action = "/edit_playlist";
-    }
+function showPage(page) {
+  var totalPages = ${len(yt_entries)/20};
+  if (page < 0 || page >= totalPages)
+    return;
+  currentPage = page;
+  if (currentPage == 0)
+    $("#paginatorPrev").attr("class", "active");
+  else
+    $("#paginatorPrev").attr("class", "");
+
+  for (var i = 0; i < totalPages + 1; ++i) {
+    $("#spanTopPage"+i).hide();
+    $("#paginator"+i).attr("class", "");
+  }
+  $("#spanTopPage"+currentPage).show();
+  $("#paginator"+currentPage).attr("class", "active");
+
+  if (currentPage == totalPages - 1)
+    $("#paginatorNext").attr("class", "active");
+  else
+    $("#paginatorNext").attr("class", "");
 }
 </script>
-
-    <!-- Le javascript
-    ================================================== -->
-    <!-- Placed at the end of the document so the pages load faster -->
-    <!--
-    <script src="/js/jquery.js"></script>
-    <script src="/js/bootstrap-transition.js"></script>
-    <script src="/js/bootstrap-alert.js"></script>
-    <script src="/js/bootstrap-modal.js"></script>
-    <script src="/js/bootstrap-dropdown.js"></script>
-    <script src="/js/bootstrap-scrollspy.js"></script>
-    <script src="/js/bootstrap-tab.js"></script>
-    <script src="/js/bootstrap-tooltip.js"></script>
-    <script src="/js/bootstrap-popover.js"></script>
-    <script src="/js/bootstrap-button.js"></script>
-    <script src="/js/bootstrap-collapse.js"></script>
-    <script src="/js/bootstrap-carousel.js"></script>
-    <script src="/js/bootstrap-typeahead.js"></script>
-    -->
-
   </body>
 </html>

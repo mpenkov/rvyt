@@ -14,7 +14,6 @@ import random
 import urllib
 import time
 import wsgiref.handlers
-import simplejson
 from xml.dom.minidom import parseString
 
 from google.appengine.api import channel
@@ -34,28 +33,16 @@ import logging
 
 from collections import defaultdict
 
-from admin import REDDIT_ENTRY_LIMIT, RedditEntry
-
-PLAYLIST_URI = 'http://gdata.youtube.com/feeds/api/playlists/'
-PLAYLIST_URL = 'http://www.youtube.com/playlist?list='
-
-http = httplib2.Http(memcache)
-DATETIME_FORMAT = '%H:%M %d/%m/%Y GMT'
-
-from admin import vid_from_url, YouTubeEntry
-#
-# http://stackoverflow.com/questions/753052/strip-html-from-strings-in-python
-#
-from HTMLParser import HTMLParser
-
 from mako.template import Template
 from mako.lookup import TemplateLookup
 from mako import exceptions
 lookup = TemplateLookup(directories=['.'], default_filters=['decode.utf8'], 
                     input_encoding='utf-8', output_encoding='utf-8')
-from django.utils import simplejson
+
+from admin import REDDIT_ENTRY_LIMIT, RedditEntry, vid_from_url
 
 SHORT_TITLE_LEN = 70
+DATETIME_FORMAT = '%H:%M %d/%m/%Y GMT'
 
 class WelcomeHandler(webapp.RequestHandler):
     def get(self):

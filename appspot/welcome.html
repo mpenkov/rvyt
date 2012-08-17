@@ -2,6 +2,14 @@
 <!-- 
 vim: shiftwidth=2:nosmartindent 
 -->
+
+<!--
+TODO: 
+    icons 
+    variable size for player 
+    keyboard handler for skipping a video
+    NSFW filter
+-->
 <html lang="en">
   <head>
     <meta charset="utf-8">
@@ -65,10 +73,10 @@ vim: shiftwidth=2:nosmartindent
               % for (i,entry) in enumerate(yt_entries):
                 % if i % 20 == 0:
                 </span>
-                <span id="spanTopPage${i/20}">
+                <span id="spanTopPage${i/20}" class="hidden">
                 % endif
                   <li>
-                  ${entry.rank+1}. [ <strong>${entry.score}</strong> ]
+                  ${i+1}. [ <strong>${entry.score}</strong> ]
                     <a href="javascript:ytplayer.playVideoAt(${i})">
                       ${entry.short_title} 
                     </a>
@@ -79,7 +87,7 @@ vim: shiftwidth=2:nosmartindent
             <div class="pagination">
               <ul>
                 <li id="paginatorPrev"><a href="javascript:showPage(currentPage-1)">&laquo; Prev</a></li>
-                % for i in range(len(yt_entries)/20):
+                % for i in range(len(yt_entries)/20 + 1):
                 <li id="paginator${i}"><a href="javascript:showPage(${i})">${i+1}</a></li>
                 % endfor
                 <li id="paginatorNext"><a href="javascript:showPage(currentPage+1)">Next &raquo;</a></li>
@@ -107,11 +115,7 @@ vim: shiftwidth=2:nosmartindent
 
             <p><a class="btn" id="btnViewComments" href="">View comments &raquo;</a></p>
           </div> <!-- /hero-unit -->
-          <div class="row-fluid">
-            <div class="span3">
-            </div><!--/span-->
-          </div><!--/row-->
-        </div><!-- /span9 -->
+        </div><!-- /span8 -->
       </div><!--/row-->
     </div> <!-- /container-fluid -->
 
@@ -165,7 +169,7 @@ function onPlayerStateChange(newState) {
 }
 
 function showPage(page) {
-  var totalPages = ${len(yt_entries)/20};
+  var totalPages = ${len(yt_entries)/20} + 1;
   if (page < 0 || page >= totalPages)
     return;
   currentPage = page;
@@ -175,10 +179,10 @@ function showPage(page) {
     $("#paginatorPrev").attr("class", "");
 
   for (var i = 0; i < totalPages + 1; ++i) {
-    $("#spanTopPage"+i).hide();
+    $("#spanTopPage"+i).attr("class", "hidden");
     $("#paginator"+i).attr("class", "");
   }
-  $("#spanTopPage"+currentPage).show();
+  $("#spanTopPage"+currentPage).attr("class", "");
   $("#paginator"+currentPage).attr("class", "active");
 
   if (currentPage == totalPages - 1)
@@ -187,5 +191,6 @@ function showPage(page) {
     $("#paginatorNext").attr("class", "");
 }
 </script>
+
   </body>
 </html>

@@ -5,15 +5,12 @@ vim: shiftwidth=2:nosmartindent
 
 <!--
 TODO: 
-    icons 
     variable size for player 
-    keyboard handler for skipping a video
-    NSFW filter
 -->
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <title>rvyt: Reddit Videos to YouTube Playlist</title>
+    <title>/r/videos playlist</title>
     <meta name="description" content="">
     <meta name="author" content="">
     <meta name="google-site-verification" content="Z4QNJAX48JgbeEZm4yAwC0rWyapuCHE4RDO8MaE6DGc" />
@@ -84,22 +81,34 @@ TODO:
               % endfor
               </span>
             </ul>
-            <div class="pagination">
+            <div class="pagination pagination-centered">
               <ul>
-                <li id="paginatorPrev"><a href="javascript:showPage(currentPage-1)">&laquo; Prev</a></li>
+                <li id="paginatorPrev"><a href="javascript:showPage(currentPage-1)">&laquo;</a></li>
                 % for i in range(len(yt_entries)/20 + 1):
                 <li id="paginator${i}"><a href="javascript:showPage(${i})">${i+1}</a></li>
                 % endfor
-                <li id="paginatorNext"><a href="javascript:showPage(currentPage+1)">Next &raquo;</a></li>
+                <li id="paginatorNext"><a href="javascript:showPage(currentPage+1)">&raquo;</a></li>
               </ul>
             </div>
             <p><small>Last updated ${last_update}</small></p>
-            <p><a class="btn btn-large btn-primary btn-success" href="http://reddit.com/r/videos">Go to reddit.com/r/videos &raquo;</a></p>
+            <p>
+            % if nsfw_filter:
+            <a class="btn btn-warning" href="/">
+              <i class="icon-warning-sign icon-white"></i>
+              Show NSFW/NSFL videos
+            </a>
+            % else:
+            <a class="btn btn-success" href="/?nsfw_filter=1">
+              <i class="icon-ban-circle icon-white"></i>
+              Hide NSFW/NSFL videos
+            </a>
+            % endif
+            <p>
           </div><!--/.well -->
         </div><!--/span-->
         <div class="span8">
           <div class="hero-unit">
-            <div class="page-header"><h1>/r/videos Top 100 Playlist</h1></div>
+            <h1>/r/videos playlist</h1>
             <h2 id="h2NowPlaying"></h2>
 
 <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/swfobject/2.2/swfobject.js"></script>    
@@ -113,7 +122,19 @@ TODO:
      "ytapiplayer", "640", "360", "8", null, null, params, atts);
 </script>
 
-            <p><a class="btn" id="btnViewComments" href="">View comments &raquo;</a></p>
+            <p>
+              <a class="btn" href="javascript:prevVideo()">
+                <i class="icon-step-backward"></i>
+              </a>
+              <a class="btn" href="javascript:nextVideo()">
+                <i class="icon-step-forward"></i>
+              </a>
+              <a class="btn" id="btnViewComments" href="">
+                <i class="icon-comment"></i>
+                  comments
+              </a>
+            </p>
+            <p>Tip: press the spacebar to skip to the next video in the playlist.</p>
           </div> <!-- /hero-unit -->
         </div><!-- /span8 -->
       </div><!--/row-->
@@ -145,6 +166,11 @@ function onYouTubePlayerReady(playerId) {
     ytplayer.addEventListener("onStateChange", "onPlayerStateChange");
 }
 
+document.onkeypress = function(e) {
+  if (e.keyCode == 32)
+    nextVideo();
+}
+
 var currentPage = 0;
 var allEntries = Array();
 % for e in yt_entries:
@@ -152,6 +178,20 @@ allEntries["${e.ytid}"] = { title : "${e.title}",  rank : ${e.rank}, score : ${e
 % endfor
 updateNowPlaying("${yt_entries[0].ytid}");
 showPage(0);
+
+function prevVideo() {
+  var currentIndex = ytplayer.getPlaylistIndex();
+  if (currentIndex == 0)
+    return;
+  ytplayer.playVideoAt(currentIndex-1);
+}
+
+function nextVideo() {
+  var currentIndex = ytplayer.getPlaylistIndex();
+  if (currentIndex == ${len(yt_entries) - 1})
+    return;
+  ytplayer.playVideoAt(currentIndex+1);
+}
 
 function updateNowPlaying(video_id) {
   console.debug("updateNowPlaying():" + video_id);
@@ -191,6 +231,5 @@ function showPage(page) {
     $("#paginatorNext").attr("class", "");
 }
 </script>
-
   </body>
 </html>

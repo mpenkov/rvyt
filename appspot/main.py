@@ -41,8 +41,12 @@ lookup = TemplateLookup(directories=['.'], default_filters=['decode.utf8'],
 
 from admin import REDDIT_ENTRY_LIMIT, RedditEntry, vid_from_url
 
-SHORT_TITLE_LEN = 70
+SHORT_TITLE_LEN = 40
 DATETIME_FORMAT = '%H:%M %d/%m/%Y GMT'
+
+def is_not_safe(entry):
+    title = entry.title.lower()
+    return (title.find("nsfw") != -1 or title.find("nsfl") != -1)
 
 class WelcomeHandler(webapp.RequestHandler):
     def get(self):
@@ -50,11 +54,15 @@ class WelcomeHandler(webapp.RequestHandler):
         query.order('rank')
         all_entries = query.fetch(limit=REDDIT_ENTRY_LIMIT)
 
+        nsfw_filter = self.request.get("nsfw_filter") != ""
+
         yt_entries = list()
         playlist = list()
         for e in all_entries:
             e.ytid = vid_from_url(e.url)
             if not e.ytid:
+                continue
+            if nsfw_filter and is_not_safe(e):
                 continue
             e.title = e.title.replace('"', "'")
             e.short_title = e.title

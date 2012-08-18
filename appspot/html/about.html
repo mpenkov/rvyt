@@ -79,24 +79,6 @@ so viewer discretion is still recommended.</p>
     to videos on various other sites such as Vimeo, Dailymotion, and others.
     Support for viewing videos on these sites is currently not implemented,
     so such videos are skipped.</li>
-    <li><strong>Why is creating a YouTube playlist so slow?</strong>  The application uses the 
-    <a href="http://code.google.com/apis/youtube/1.0/developers_guide_python.html">YouTube API</a> 
-    to create playlists.  There are 
-    <a href="http://code.google.com/apis/youtube/faq.html#operation_limits">limits</a> 
-    on how often an application can
-    call the API.  Once these limits are reached, the application must wait for
-    a while before it can make more API calls.  This waiting is what causes the delay.</li>
-    <li><strong>Is my account information safe?</strong>  It is as safe as any of the other data
-    you are keeping with Google.  Once you give your permission, this application uses 
-    <a href="http://en.wikipedia.org/wiki/OAuth">OAuth</a> 2.0 to access YouTube on
-    your behalf, but <em>never</em> has access to your password.  You can also
-    <a href="https://www.google.com/accounts/b/0/IssuedAuthSubTokens">revoke</a> the
-    the permission at any time.</li>
-    <li><strong>What can the application do with my account once I grant permission?</strong>
-    In theory, the application will have full access to your account: for
-    example, adding comments and ratings, uploading and removing videos, and
-    creating and updating playlists.  In practice, the application will only
-    create a playlist and add videos to it.</li>
 </ol>
 
 <h2>Acknowledgements</h2>

@@ -6,6 +6,8 @@ vim: shiftwidth=2:nosmartindent
 <!--
 TODO: 
     variable size for player 
+    hide sidebar
+    iframes player
 -->
 <html lang="en">
   <head>
@@ -62,7 +64,7 @@ TODO:
 
     <div class="container-fluid">
       <div class="row-fluid">
-        <div class="span4">
+        <div class="span3">
           <div class="well sidebar-nav">
             <ul class="nav nav-list">
               <li class="nav-header">Current Top Videos</li>
@@ -106,7 +108,7 @@ TODO:
             <p>
           </div><!--/.well -->
         </div><!--/span-->
-        <div class="span8">
+        <div class="span9">
           <div class="hero-unit">
             <h1>/r/videos playlist</h1>
             <h2 id="h2NowPlaying"></h2>
@@ -119,7 +121,7 @@ TODO:
     var params = { allowScriptAccess: "always", allowFullScreen: "true" };
     var atts = { id: "myytplayer" };
     swfobject.embedSWF("http://www.youtube.com/v/${yt_entries[0].ytid}?enablejsapi=1&playerapiid=ytplayer&version=3&playlist=${playlist}",
-     "ytapiplayer", "640", "360", "8", null, null, params, atts);
+            "ytapiplayer", "${player_width}", "${player_height}", "8", null, null, params, atts);
 </script>
 
             <p>

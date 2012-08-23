@@ -54,7 +54,15 @@ class WelcomeHandler(webapp.RequestHandler):
         query.order('rank')
         all_entries = query.fetch(limit=REDDIT_ENTRY_LIMIT)
 
-        nsfw_filter = self.request.get("nsfw_filter") != ""
+        nsfw_filter = False if self.request.get("nsfw_filter") == "0" else True
+
+        res = self.request.get("res")
+        player_width, player_height = 640, 360
+        try:
+            player_height = int(res)
+            player_width = int(player_height*16/9)
+        except:
+            pass
 
         yt_entries = list()
         playlist = list()

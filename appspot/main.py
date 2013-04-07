@@ -58,7 +58,6 @@ class WelcomeHandler(webapp.RequestHandler):
             pass
 
         yt_entries = list()
-        playlist = list()
         for e in all_entries:
             e.ytid = vid_from_url(e.url)
             if not e.ytid:
@@ -70,12 +69,13 @@ class WelcomeHandler(webapp.RequestHandler):
             if len(e.short_title) >= SHORT_TITLE_LEN:
                 e.short_title = e.short_title[:SHORT_TITLE_LEN] + "..."
             yt_entries.append(e)
-            playlist.append(e.ytid)
-        playlist = ",".join(playlist[1:])
         last_update = yt_entries[0].timestamp.strftime(DATETIME_FORMAT)
         template = lookup.get_template("welcome.html")
-        variables = locals()
-        del variables["self"]
+        variables = {
+            "yt_entries": yt_entries,
+            "last_update": last_update,
+            "nsfw_filter": nsfw_filter
+        }
         html = template.render(**variables)
         self.response.out.write(html)
 

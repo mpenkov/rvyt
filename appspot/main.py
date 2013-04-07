@@ -1,13 +1,6 @@
-#
-# http://stackoverflow.com/questions/5056719/using-httplib2-on-python-appengine
-# 
-import sys
-sys.modules['ssl'] = None
-
 import os
 import cgi
 import datetime
-import httplib2
 import logging
 import pickle
 import random

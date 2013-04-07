@@ -1,10 +1,4 @@
 atom
 gdata
-reddit
+simplejson
 client_secrets.json
-apiclient
-gflags_validators.py
-gflags.py
-httplib2
-oauth2client
-uritemplate

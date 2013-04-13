@@ -64,7 +64,7 @@ TODO:
     <div class="container-fluid">
       <div class="row-fluid">
         <div class="span3">
-          <div class="well sidebar-nav">
+          <div id="divSidebar" class="well sidebar-nav">
             <ul class="nav nav-list">
               <li class="nav-header">Current Top Videos</li>
               <span> <!-- dummy span -->
@@ -112,7 +112,11 @@ TODO:
             <div id="player"></div>
 
             <p>
-              <a class="btn" id="btnPrevious">
+              <a class="btn" id="btnTogglePlaylist" href="#">
+                <i class="icon-eye-close"></i>
+                toggle playlist
+              </a>
+              <a class="btn" id="btnPrevious" href="#">
                 <i class="icon-step-backward"></i>
               </a>
               <a class="btn" id="btnNext">
@@ -164,6 +168,13 @@ allEntries.push(
 );
 playlist.push("${e.ytid}");
 % endfor
+
+//
+// Install click handler for the playlist toggle
+//
+$("#btnTogglePlaylist").click(function() {
+    $("#divSidebar").toggle();
+});
 
 //
 // Install click handlers for the paginator buttons.

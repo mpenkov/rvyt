@@ -49,14 +49,6 @@ class WelcomeHandler(webapp.RequestHandler):
 
         nsfw_filter = False if self.request.get("nsfw_filter") == "0" else True
 
-        res = self.request.get("res")
-        player_width, player_height = 640, 360
-        try:
-            player_height = int(res)
-            player_width = int(player_height*16/9)
-        except:
-            pass
-
         yt_entries = list()
         for e in all_entries:
             e.ytid = vid_from_url(e.url)

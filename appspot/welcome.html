@@ -119,12 +119,20 @@ TODO:
               <a class="btn" id="btnPrevious" href="#">
                 <i class="icon-step-backward"></i>
               </a>
-              <a class="btn" id="btnNext">
+              <a class="btn" id="btnNext" href="#">
                 <i class="icon-step-forward"></i>
               </a>
-              <a class="btn" id="btnViewComments" href="">
+              <a class="btn" id="btnZoomOut" href="#">
+                <i class="icon-zoom-out"></i>
+                  zoom out
+              </a>
+              <a class="btn" id="btnZoomIn" href="#">
+                <i class="icon-zoom-in"></i>
+                  zoom in
+              </a>
+              <a class="btn" id="btnViewComments" href="#">
                 <i class="icon-comment"></i>
-                  comments
+                  reddit comments
               </a>
             </p>
             <p>Tip: press the spacebar to skip to the next video in the playlist.</p>
@@ -207,11 +215,13 @@ firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
 
 // 3. This function creates an <iframe> (and YouTube player)
 //    after the API code downloads.
+var player_width = 640;
+var player_height = 390;
 var player;
 function onYouTubeIframeAPIReady() {
   player = new YT.Player('player', {
-    height: '390',
-    width: '640',
+    height: player_height,
+    width: player_width,
     videoId: allEntries[0].ytid,
     events: {
       'onReady': onPlayerReady,
@@ -236,6 +246,18 @@ function onPlayerReady(event) {
       player.nextVideo();
       return false;
     }
+  });
+
+  $("#btnZoomIn").click(function() {
+      player_width *= 1.1;
+      player_height *= 1.1;
+      player.setSize(player_width, player_height);
+  });
+
+  $("#btnZoomOut").click(function() {
+      player_width /= 1.1;
+      player_height /= 1.1;
+      player.setSize(player_width, player_height);
   });
 
   //

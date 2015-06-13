@@ -1,13 +1,12 @@
 <!DOCTYPE html>
-<!-- 
-vim: shiftwidth=2:nosmartindent 
+<!--
+vim: shiftwidth=2:nosmartindent
 -->
 
 <!--
-TODO: 
-    variable size for player 
+TODO:
+    variable size for player
     hide sidebar
-    iframes player
 -->
 <html lang="en">
   <head>
@@ -39,7 +38,7 @@ TODO:
     -->
   </head>
 
-  <body>      
+  <body>
 
     <div class="navbar navbar-fixed-top">
       <div class="navbar-inner">
@@ -64,7 +63,7 @@ TODO:
     <div class="container-fluid">
       <div class="row-fluid">
         <div class="span3">
-          <div class="well sidebar-nav">
+          <div id="divSidebar" class="well sidebar-nav">
             <ul class="nav nav-list">
               <li class="nav-header">Current Top Videos</li>
               <span> <!-- dummy span -->
@@ -73,22 +72,17 @@ TODO:
                 </span>
                 <span id="spanTopPage${i/20}" class="hidden">
                 % endif
-                  <li>
-                  ${i+1}. [ <strong>${entry.score}</strong> ]
-                    <a href="javascript:ytplayer.playVideoAt(${i + 1})">
-                      ${entry.short_title()} 
-                    </a>
-                  </li>
+                  <li>${i+1}. [ <strong>${entry.score}</strong> ] <a id="playVideo${i}" href="#">${entry.short_title()}</a></li>
               % endfor
               </span>
             </ul>
             <div class="pagination pagination-centered">
               <ul>
-                <li id="paginatorPrev"><a href="javascript:showPage(currentPage-1)">&laquo;</a></li>
+                <li id="paginatorPrev"><a href="#">&laquo;</a></li>
                 % for i in range(len(submissions)/20 + 1):
-                <li id="paginator${i}"><a href="javascript:showPage(${i})">${i+1}</a></li>
+                <li id="paginator${i}"><a href="#">${i+1}</a></li>
                 % endfor
-                <li id="paginatorNext"><a href="javascript:showPage(currentPage+1)">&raquo;</a></li>
+                <li id="paginatorNext"><a href="#">&raquo;</a></li>
               </ul>
             </div>
             <p><small>Last updated ${submissions[0].timestamp.strftime("%H:%M %d/%m/%Y GMT")}</small></p>
@@ -112,27 +106,31 @@ TODO:
             <h1>/r/videos playlist</h1>
             <h2 id="h2NowPlaying"></h2>
 
-<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/swfobject/2.2/swfobject.js"></script>    
-<div id="ytapiplayer">
-    You need Flash player 8+ and JavaScript enabled to view this video.
-</div>
-<script type="text/javascript">
-    var params = { allowScriptAccess: "always", allowFullScreen: "true" };
-    var atts = { id: "myytplayer" };
-    swfobject.embedSWF("http://www.youtube.com/v/${submissions[0].ytid}?enablejsapi=1&playerapiid=ytplayer&version=3&playlist=${playlist}",
-            "ytapiplayer", "${width}", "${height}", "8", null, null, params, atts);
-</script>
+            <!-- 1. The <iframe> (and video player) will replace this <div> tag. -->
+            <div id="player"></div>
 
             <p>
-              <a class="btn" href="javascript:prevVideo()">
+              <a class="btn" id="btnTogglePlaylist" href="#">
+                <i class="icon-eye-close"></i>
+                toggle playlist
+              </a>
+              <a class="btn" id="btnPrevious" href="#">
                 <i class="icon-step-backward"></i>
               </a>
-              <a class="btn" href="javascript:nextVideo()">
+              <a class="btn" id="btnNext" href="#">
                 <i class="icon-step-forward"></i>
               </a>
-              <a class="btn" id="btnViewComments" href="">
+              <a class="btn" id="btnZoomOut" href="#">
+                <i class="icon-zoom-out"></i>
+                  zoom out
+              </a>
+              <a class="btn" id="btnZoomIn" href="#">
+                <i class="icon-zoom-in"></i>
+                  zoom in
+              </a>
+              <a class="btn" id="btnViewComments" href="#">
                 <i class="icon-comment"></i>
-                  comments
+                  reddit comments
               </a>
             </p>
             <p>Tip: press the spacebar to skip to the next video in the playlist.</p>
@@ -161,60 +159,124 @@ TODO:
 <script src="/js/bootstrap-typeahead.js"></script>
 
 <script type="text/javascript">
-var ytplayer;
-function onYouTubePlayerReady(playerId) {
-    ytplayer = document.getElementById("myytplayer");
-    ytplayer.addEventListener("onStateChange", "onPlayerStateChange");
-}
-
-document.onkeypress = function(e) {
-  if (e.keyCode == 32)
-    nextVideo();
-}
-
-var currentPage = 0;
-var allEntries = Array();
-% for e in submissions:
-allEntries["${e.ytid}"] = {title: "${e.safe_title()}",
-                           rank: ${e.rank}, 
-                           score: ${e.score}, 
-                           ytid: "${e.ytid}",
-                           permalink: "${e.permalink}"};
+var nowPlaying = [];
+var playlist = [];
+% for sub in submissions:
+nowPlaying.push("${'%d [ %d ] %s' % (sub.rank + 1, sub.score, sub.safe_title())}");
+playlist.push("${sub.ytid}");
 % endfor
-updateNowPlaying("${submissions[0].ytid}");
+
+//
+// Install click handler for the playlist toggle
+//
+$("#btnTogglePlaylist").click(function() {
+    $("#divSidebar").toggle();
+});
+
+//
+// Install click handlers for the paginator buttons.
+//
+var currentPage = 0;
+
+var totalPages = ${len(submissions)/20} + 1;
+for (var i = 0; i < totalPages; ++i) {
+  //
+  // This brainfuck is called a nested closure.
+  // If we don't do it, then the click handlers will always call
+  // showPage(totalPages).
+  //
+  // http://stackoverflow.com/questions/1552941/how-does-a-function-in-a-loop-which-returns-another-function-work
+  //
+  $("#paginator"+i).children(":first").click(function(j) {
+      return function(e) { showPage(j) }
+    }(i)
+  );
+}
+$("#paginatorNext").children(":first").click(function(e) { showPage(currentPage+1) });
+$("#paginatorPrev").children(":first").click(function(e) { showPage(currentPage-1) });
 showPage(0);
 
-function prevVideo() {
-  var currentIndex = ytplayer.getPlaylistIndex();
-  if (currentIndex == 0)
-    return;
-  ytplayer.playVideoAt(currentIndex-1);
+// 2. This code loads the IFrame Player API code asynchronously.
+var tag = document.createElement('script');
+
+tag.src = "https://www.youtube.com/iframe_api";
+var firstScriptTag = document.getElementsByTagName('script')[0];
+firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+// 3. This function creates an <iframe> (and YouTube player)
+//    after the API code downloads.
+var player_width = 640;
+var player_height = 390;
+var player;
+function onYouTubeIframeAPIReady() {
+  player = new YT.Player('player', {
+    height: player_height,
+    width: player_width,
+    videoId: playlist[0],
+    events: {
+      'onReady': onPlayerReady,
+      'onStateChange': onPlayerStateChange
+    }
+  });
 }
 
-function nextVideo() {
-  var currentIndex = ytplayer.getPlaylistIndex();
-  if (currentIndex == ${len(submissions) - 1})
-    return;
-  ytplayer.playVideoAt(currentIndex+1);
+// 4. The API will call this function when the video player is ready.
+function onPlayerReady(event) {
+  event.target.cuePlaylist(playlist);
+  event.target.playVideo();
+
+  //
+  // Install handlers for the previous/next buttons
+  // Only do this here since now we can be sure the player has been initialized.
+  //
+  $("#btnPrevious").click(function() { player.previousVideo() });
+  $("#btnNext").click(function() { player.nextVideo() });
+  $(document).keydown(function(evt) {
+    if (evt.keyCode == 32) {
+      player.nextVideo();
+      return false;
+    }
+  });
+
+  $("#btnZoomIn").click(function() {
+      player_width *= 1.1;
+      player_height *= 1.1;
+      player.setSize(player_width, player_height);
+  });
+
+  $("#btnZoomOut").click(function() {
+      player_width /= 1.1;
+      player_height /= 1.1;
+      player.setSize(player_width, player_height);
+  });
+
+  //
+  // Install handlers for the individual video links
+  //
+  for (var i = 0; i < playlist.length; ++i) {
+    $("#playVideo"+i).click(function(j) {
+        return function(e) { player.playVideoAt(j) }
+      }(i)
+    );
+  }
+
+  updateNowPlaying(0);
 }
 
-function updateNowPlaying(video_id) {
-  console.debug("updateNowPlaying():" + video_id);
-  var entry = allEntries[video_id];
-  $("#h2NowPlaying").html('#{0} [ {2} ] {1}'.format((entry.rank+1), entry.title, entry.score));
-  $("#btnViewComments").attr("href", entry.permalink);
+// 5. The API calls this function when the player's state changes.
+function onPlayerStateChange(event) {
+  updateNowPlaying(parseInt(player.getPlaylistIndex()));
 }
 
-function onPlayerStateChange(newState) {
-  console.debug('onPlayerStateChange(): ' + newState);
-  pattern = /v=([\w-]{11})/;
-  result = ytplayer.getVideoUrl().match(pattern);
-  console.debug(result[1]);
-  updateNowPlaying(result[1]);
+function updateNowPlaying(index) {
+  var entry = nowPlaying[index];
+  if (entry !== undefined) {
+    $("#h2NowPlaying").html(entry);
+    $("#btnViewComments").attr("href", "http://www.reddit.com" + entry.permalink);
+  }
 }
 
 function showPage(page) {
-  var totalPages = ${len(submissions)/20} + 1;
   if (page < 0 || page >= totalPages)
     return;
   currentPage = page;

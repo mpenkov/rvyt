@@ -1,95 +1,66 @@
-#
-# http://stackoverflow.com/questions/5056719/using-httplib2-on-python-appengine
-# 
-import sys
-sys.modules['ssl'] = None
+import mako.lookup
+import mako.exceptions
+import os.path as P
 
-import os
-import cgi
-import datetime
-import httplib2
-import logging
-import pickle
-import random
-import urllib
-import time
-import wsgiref.handlers
-from xml.dom.minidom import parseString
+import cherrypy
 
-from google.appengine.api import channel
-from google.appengine.api import taskqueue
-from google.appengine.ext import db
-from google.appengine.api import memcache
-from google.appengine.api import users
-from google.appengine.ext import webapp
+import orm
+import satool
 
-from google.appengine.ext.webapp.util import run_wsgi_app
+CURR_DIR = P.dirname(P.abspath(__file__))
 
-import gdata.youtube
-import gdata.youtube.service
-import gdata.service
 
-import logging
+class Root(object):
+    _cp_config = {"tools.sessions.on": True}
 
-from collections import defaultdict
+    def __init__(self):
+        self.lookup = mako.lookup.TemplateLookup(
+            directories=["html"], default_filters=["decode.utf8"],
+            input_encoding="utf-8", output_encoding="utf-8",
+            strict_undefined=True)
 
-from mako.template import Template
-from mako.lookup import TemplateLookup
-from mako import exceptions
-lookup = TemplateLookup(directories=['.'], default_filters=['decode.utf8'], 
-                    input_encoding='utf-8', output_encoding='utf-8')
+    @cherrypy.expose
+    def index(self, nsfw_filter="false", res="360"):
+        submissions = cherrypy.request.db.query(orm.Submission).all()
 
-from admin import REDDIT_ENTRY_LIMIT, RedditEntry, vid_from_url
+        if nsfw_filter.lower() == "true":
+            submissions = [s for s in submissions if s.is_safe()]
 
-SHORT_TITLE_LEN = 40
-DATETIME_FORMAT = '%H:%M %d/%m/%Y GMT'
-
-def is_not_safe(entry):
-    title = entry.title.lower()
-    return (title.find("nsfw") != -1 or title.find("nsfl") != -1)
-
-class WelcomeHandler(webapp.RequestHandler):
-    def get(self):
-        query = RedditEntry.all()
-        query.order('rank')
-        all_entries = query.fetch(limit=REDDIT_ENTRY_LIMIT)
-
-        nsfw_filter = False if self.request.get("nsfw_filter") == "0" else True
-
-        res = self.request.get("res")
-        player_width, player_height = 640, 360
         try:
-            player_height = int(res)
-            player_width = int(player_height*16/9)
-        except:
-            pass
+            height = int(res)
+            width = int(height*16/9)
+        except ValueError:
+            width, height = 640, 360
 
-        yt_entries = list()
-        playlist = list()
-        for e in all_entries:
-            e.ytid = vid_from_url(e.url)
-            if not e.ytid:
-                continue
-            if nsfw_filter and is_not_safe(e):
-                continue
-            e.title = e.title.replace('"', "'")
-            e.short_title = e.title
-            if len(e.short_title) >= SHORT_TITLE_LEN:
-                e.short_title = e.short_title[:SHORT_TITLE_LEN] + "..."
-            yt_entries.append(e)
-            playlist.append(e.ytid)
-        playlist = ",".join(playlist[1:])
-        last_update = yt_entries[0].timestamp.strftime(DATETIME_FORMAT)
-        template = lookup.get_template("welcome.html")
-        variables = locals()
-        del variables["self"]
-        html = template.render(**variables)
-        self.response.out.write(html)
+        playlist = ",".join([sub.ytid for sub in submissions if sub.ytid])
+        template = self.lookup.get_template("index.html")
+        html = template.render(submissions=submissions, playlist=playlist,
+                               width=width, height=height,
+                               nsfw_filter=nsfw_filter)
+        return html
 
-application = webapp.WSGIApplication([ ('/', WelcomeHandler) ], debug=True)
+
+def create_parser():
+    from optparse import OptionParser
+    parser = OptionParser(usage="%prog db.sqlite3 [options]")
+    return parser
+
 
 def main():
-  run_wsgi_app(application)
+    parser = create_parser()
+    options, args = parser.parse_args()
+    if len(args) != 1:
+        parser.error("incorrect number of arguments")
+    db_path = args[0]
+    satool.SAEnginePlugin(cherrypy.engine, db_path).subscribe()
+    cherrypy.tools.db = satool.SATool()
 
-if __name__ == '__main__':
-  main()
+    config_file = P.join(CURR_DIR, "app.config")
+    assert P.isfile(config_file)
+    cherrypy.config.update(config_file)
+    cherrypy.tree.mount(Root(), "", config=config_file)
+    cherrypy.engine.start()
+    cherrypy.engine.block()
+
+if __name__ == "__main__":
+    main()

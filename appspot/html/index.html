@@ -15,7 +15,6 @@ TODO:
     <title>/r/videos playlist</title>
     <meta name="description" content="">
     <meta name="author" content="">
-    <meta name="google-site-verification" content="Z4QNJAX48JgbeEZm4yAwC0rWyapuCHE4RDO8MaE6DGc" />
 
     <!-- Le HTML5 shim, for IE6-8 support of HTML elements -->
     <!--[if lt IE 9]>
@@ -69,15 +68,15 @@ TODO:
             <ul class="nav nav-list">
               <li class="nav-header">Current Top Videos</li>
               <span> <!-- dummy span -->
-              % for (i,entry) in enumerate(yt_entries):
+              % for (i,entry) in enumerate(submissions):
                 % if i % 20 == 0:
                 </span>
                 <span id="spanTopPage${i/20}" class="hidden">
                 % endif
                   <li>
                   ${i+1}. [ <strong>${entry.score}</strong> ]
-                    <a href="javascript:ytplayer.playVideoAt(${i})">
-                      ${entry.short_title} 
+                    <a href="javascript:ytplayer.playVideoAt(${i + 1})">
+                      ${entry.short_title()} 
                     </a>
                   </li>
               % endfor
@@ -86,13 +85,13 @@ TODO:
             <div class="pagination pagination-centered">
               <ul>
                 <li id="paginatorPrev"><a href="javascript:showPage(currentPage-1)">&laquo;</a></li>
-                % for i in range(len(yt_entries)/20 + 1):
+                % for i in range(len(submissions)/20 + 1):
                 <li id="paginator${i}"><a href="javascript:showPage(${i})">${i+1}</a></li>
                 % endfor
                 <li id="paginatorNext"><a href="javascript:showPage(currentPage+1)">&raquo;</a></li>
               </ul>
             </div>
-            <p><small>Last updated ${last_update}</small></p>
+            <p><small>Last updated ${submissions[0].timestamp.strftime("%H:%M %d/%m/%Y GMT")}</small></p>
             <p>
             % if nsfw_filter:
             <a class="btn btn-warning" href="/">
@@ -120,8 +119,8 @@ TODO:
 <script type="text/javascript">
     var params = { allowScriptAccess: "always", allowFullScreen: "true" };
     var atts = { id: "myytplayer" };
-    swfobject.embedSWF("http://www.youtube.com/v/${yt_entries[0].ytid}?enablejsapi=1&playerapiid=ytplayer&version=3&playlist=${playlist}",
-            "ytapiplayer", "${player_width}", "${player_height}", "8", null, null, params, atts);
+    swfobject.embedSWF("http://www.youtube.com/v/${submissions[0].ytid}?enablejsapi=1&playerapiid=ytplayer&version=3&playlist=${playlist}",
+            "ytapiplayer", "${width}", "${height}", "8", null, null, params, atts);
 </script>
 
             <p>
@@ -175,10 +174,14 @@ document.onkeypress = function(e) {
 
 var currentPage = 0;
 var allEntries = Array();
-% for e in yt_entries:
-allEntries["${e.ytid}"] = { title : "${e.title}",  rank : ${e.rank}, score : ${e.score}, ytid : "${e.ytid}", permalink : "${e.permalink}" };
+% for e in submissions:
+allEntries["${e.ytid}"] = {title: "${e.safe_title()}",
+                           rank: ${e.rank}, 
+                           score: ${e.score}, 
+                           ytid: "${e.ytid}",
+                           permalink: "${e.permalink}"};
 % endfor
-updateNowPlaying("${yt_entries[0].ytid}");
+updateNowPlaying("${submissions[0].ytid}");
 showPage(0);
 
 function prevVideo() {
@@ -190,7 +193,7 @@ function prevVideo() {
 
 function nextVideo() {
   var currentIndex = ytplayer.getPlaylistIndex();
-  if (currentIndex == ${len(yt_entries) - 1})
+  if (currentIndex == ${len(submissions) - 1})
     return;
   ytplayer.playVideoAt(currentIndex+1);
 }
@@ -199,7 +202,7 @@ function updateNowPlaying(video_id) {
   console.debug("updateNowPlaying():" + video_id);
   var entry = allEntries[video_id];
   $("#h2NowPlaying").html('#{0} [ {2} ] {1}'.format((entry.rank+1), entry.title, entry.score));
-  $("#btnViewComments").attr("href", "http://www.reddit.com" + entry.permalink);
+  $("#btnViewComments").attr("href", entry.permalink);
 }
 
 function onPlayerStateChange(newState) {
@@ -211,7 +214,7 @@ function onPlayerStateChange(newState) {
 }
 
 function showPage(page) {
-  var totalPages = ${len(yt_entries)/20} + 1;
+  var totalPages = ${len(submissions)/20} + 1;
   if (page < 0 || page >= totalPages)
     return;
   currentPage = page;

@@ -1,10 +1,2 @@
-atom
-gdata
-reddit
-client_secrets.json
-apiclient
-gflags_validators.py
-gflags.py
-httplib2
-oauth2client
-uritemplate
+app.config
+*.sqlite3
